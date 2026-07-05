@@ -1,0 +1,93 @@
+# =========================
+# Environment & Secrets
+# =========================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+
+# =========================
+# Node.js / NPM
+# =========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+package-lock.json.bak
+
+# =========================
+# Prisma
+# =========================
+# Keep schema.prisma and migrations, ignore generated client
+**/prisma/generated/
+# Migration lock is safe to commit, but ignore local dev db
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# =========================
+# Build Outputs
+# =========================
+dist/
+build/
+out/
+.output/
+*.tsbuildinfo
+
+# =========================
+# Vite / Frontend
+# =========================
+frontend/**/.vite/
+frontend/**/dist/
+
+# =========================
+# Logs
+# =========================
+logs/
+*.log
+*.log.*
+
+# =========================
+# OS Files
+# =========================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# =========================
+# IDE & Editor
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# =========================
+# Testing & Coverage
+# =========================
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+
+# =========================
+# Redis (local data)
+# =========================
+redis/data/
+dump.rdb
+
+# =========================
+# Misc
+# =========================
+.cache/
+tmp/
+temp/

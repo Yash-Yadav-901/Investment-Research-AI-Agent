@@ -12,10 +12,14 @@
   "type": "commonjs",
   "dependencies": {
     "@clerk/express": "^2.1.35",
+    "@prisma/client": "^7.8.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "nodemon": "^3.1.14",
     "prettier": "^3.9.4"
+  },
+  "devDependencies": {
+    "prisma": "^6.19.3"
   }
 }
