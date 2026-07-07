@@ -8,7 +8,7 @@ import {getAuth} from '@clerk/express'
 const prisma = new PrismaClient();
 
 
-const singup= asyncHandler(async(req, res) => { 
+const signup= asyncHandler(async(req, res) => { 
      try {                                           
         const auth = getAuth(req);
         
@@ -67,6 +67,7 @@ const get_profile= asyncHandler(async(req, res)=>{
 
 
 
+export {signup, get_profile};
 
 
 

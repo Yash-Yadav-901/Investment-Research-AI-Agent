@@ -90,3 +90,46 @@ const updateWorkspaceName = asyncHandler(async (req, res) => {
     }
 });
 
+const deleteWorkspace = asyncHandler(async (req, res) => {
+    const { workspaceId } = req.body;
+    const auth = getAuth(req);
+    const userId = auth.userId;
+
+    if (!workspaceId) {
+        throw new ApiError(400, "Workspace ID is required");
+    }
+
+    if (!userId) {
+        throw new ApiError(401, "Unauthorized");
+    }
+
+    try {
+        const workspace = await prisma.workspace.findUnique({
+            where: { id: workspaceId },
+        });
+        
+        if (!workspace) {
+            throw new ApiError(404, "Workspace not found");
+        }
+
+        if (workspace.ownerId !== userId) {
+            throw new ApiError(403, "You do not have permission to delete this workspace");
+        }
+
+        await prisma.workspace.delete({
+            where: { id: workspaceId },
+        });
+
+        return res.status(200).json(new ApiResponse(200, null, "Workspace deleted successfully"));
+    } catch (error) {
+        throw new ApiError(500, "Error while deleting workspace");
+    }
+});
+
+export {
+    createWorkspace,
+    getWorkspaces,
+    updateWorkspaceName,
+    deleteWorkspace
+};
+
