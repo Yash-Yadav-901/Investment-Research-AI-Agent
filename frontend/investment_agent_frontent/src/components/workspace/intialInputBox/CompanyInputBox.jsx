@@ -23,7 +23,7 @@ const CompanyInputBox = () => {
                     y: Math.floor(Math.random() * 400), 
                 },
             };
-            const response = await axiosInstance.post("/companies", { name: companyName });
+            const response = await axiosInstance.post("/companies", { name: companyName, companyNodeData });
             if (response.data) {
                 dispatch(addCompany(response.data));
                 setCompanyName(""); // Clear the input field after adding

@@ -28,10 +28,10 @@ const MainWorkspace = () => {
         console.log("No companies found in the Redux store.");
     } else {
         setNodes(companies.map((company, index) => ({
-            id: `company-${index}`,
+            id: company.companyNodeData?.id || company.id.toString(),
             type: 'companyNode',
-            position: { x: 100 * index, y: 100 },
-            data: { label: company.name },
+            position: company.companyNodeData?.position || { x: 0, y: 0 },
+            data: company?.rawData || {},
         })));
         console.log("Companies from Redux store:", companies);
     }
