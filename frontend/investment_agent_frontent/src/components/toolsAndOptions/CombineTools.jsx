@@ -1,7 +1,7 @@
 import React from "react";
 import SideBar from "./SideBar";
 
-const CombainTools = () => {
+const CombineTools = () => {
   return (
    <div>
     <SideBar/>
@@ -9,3 +9,5 @@ const CombainTools = () => {
    </div>
   );
 }
+
+export default CombineTools;

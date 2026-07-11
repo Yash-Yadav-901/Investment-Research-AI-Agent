@@ -97,3 +97,5 @@ const MainWorkspace = () => {
     );
 
 }
+
+export default MainWorkspace;
