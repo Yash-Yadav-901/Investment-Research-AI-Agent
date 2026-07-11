@@ -27,12 +27,12 @@ const MainWorkspace = () => {
     if(!companies || companies.length === 0) {
         console.log("No companies found in the Redux store.");
     } else {
-        setNodes(companies.map((company, index) => ({
+        setNodes([ { id: '1', type: 'inputBox', position: { x: 0, y: 0 } }, ...companies.map((company, index) => ({
             id: company.companyNodeData?.id || company.id.toString(),
             type: 'companyNode',
             position: company.companyNodeData?.position || { x: 0, y: 0 },
             data: company?.rawData || {},
-        })));
+        }))]);
         console.log("Companies from Redux store:", companies);
     }
 
@@ -62,6 +62,24 @@ const MainWorkspace = () => {
         (changes) => setEdges((eds) => applyEdgeChanges(changes, eds)),
         []
     );
+
+    useEffect( ()=>{
+        const rootNodeId='1';
+        const newEdges= nodes.filter(node => node.id !== rootNodeId).map(node => ({
+            id: `e${rootNodeId}-${node.id}`,
+            source: rootNodeId, 
+            target: node.id,
+            // animated: true,
+            style: { stroke: '#000' },
+        }));
+        setEdges(newEdges);
+    },[nodes]);
+
+    const removeNode = (id) => {
+    setNodes((nds) => nds.filter((node) => node.id !== id));
+    setEdges((eds) => eds.filter((edge) => edge.source !== id && edge.target !== id));
+    dispatch(removeCompany(id));
+    };
 
     return (
         <div style={{ width: '100%', height: '100vh' }}>

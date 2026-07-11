@@ -25,5 +25,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(express.static('public'));
 
+import userRouter from "./routes/user.route.js";
+import workspaceRouter from "./routes/workspace.route.js";
+import companyInfoRouter from "./routes/company.route.js";
+
+app.use("/api/v1/user", userRouter);
+app.use("/api/v1/workspace", workspaceRouter);
+app.use("/api/v1/company", companyInfoRouter);
+
+import { errorHandler } from "./middlewares/error.middleware.js";
+app.use(errorHandler);
 
 export { app };
