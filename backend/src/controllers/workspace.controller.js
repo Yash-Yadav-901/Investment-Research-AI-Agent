@@ -126,10 +126,66 @@ const deleteWorkspace = asyncHandler(async (req, res) => {
     }
 });
 
+const getWorkspaceAndCompaniesByWorkspaceId = asyncHandler(async (req, res) => {
+    const { workspaceId } = req.params;
+    const auth = getAuth(req);
+    const userId = auth.userId; 
+
+    if (!workspaceId) {
+        throw new ApiError(400, "Workspace ID is required");
+    }
+    if (!userId) {
+        throw new ApiError(401, "Unauthorized");
+    }
+
+    const userExists = await prisma.user.findUnique({
+        where: {
+            clerkId: userId
+        }
+    });
+
+    if (!userExists) {
+        throw new ApiError(404, "User not found");
+    }
+
+    const workspaceExits = await prisma.workspace.findUnique({
+        where: {
+            id: parseInt(workspaceId)
+        }
+    });
+
+    if (!workspaceExits) {
+        throw new ApiError(404, "Workspace not found");
+    }
+
+    try{
+       const workspaceWithCompanies = await prisma.workspace.findUnique({
+            where: {
+                id: parseInt(workspaceId)
+            },
+            include: {
+                companies: true
+            }
+        });
+
+        return res.status(200).json(
+            new ApiResponse(200, workspaceWithCompanies, "Workspace and companies fetched successfully")
+        );
+    }
+    catch (error) {
+        throw new ApiError(500, "Error while fetching workspace and companies");
+    }
+
+});
+
+
+
+
 export {
     createWorkspace,
     getWorkspaces,
     updateWorkspaceName,
-    deleteWorkspace
+    deleteWorkspace,
+    getWorkspaceAndCompaniesByWorkspaceId
 };
 
