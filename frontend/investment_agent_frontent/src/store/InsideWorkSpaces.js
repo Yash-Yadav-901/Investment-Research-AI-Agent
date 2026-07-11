@@ -26,5 +26,5 @@ const InsideWorkSpacesSlice = createSlice({
 });
 
 export const {setCompanies, removeCompany, updateCompany, addCompany} = InsideWorkSpacesSlice.actions;
-
-export default InsideWorkSpacesSlice.reducer;
+const InsideWorkSpacesReducer = InsideWorkSpacesSlice.reducer;
+export { InsideWorkSpacesReducer };

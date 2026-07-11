@@ -2,7 +2,7 @@ import react from "react";
 import { useState, useEffect, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import axiosInstance from "../../axiosInstance";
-import { setCompanies, removeCompany, updateCompany, updateCompany } from "../../store/InsideWorkSpaces";
+import { setCompanies, removeCompany, updateCompany } from "../../store/InsideWorkSpaces";
 import {
     ReactFlow,
     Background,
@@ -11,17 +11,28 @@ import {
     applyEdgeChanges,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import CompanyInputBox from "./intialInputBox/CompanyInputBox";
 
 
+const nodeTypes = {
+    inputBox : CompanyInputBox,
+    companyNode: CompanyInputBox, 
+}
 const MainWorkspace = () => {
-    const [nodes, setNodes] = useState([]);
+    const [nodes, setNodes] = useState([{ id: '1', type: 'inputBox', position: { x: 0, y: 0 } }]);
     const [edges, setEdges] = useState([]);
     const dispatch = useDispatch();
-
     const companies = useSelector((state) => state.InsideWorkSpaces.Companies);
+    
     if(!companies || companies.length === 0) {
         console.log("No companies found in the Redux store.");
     } else {
+        setNodes(companies.map((company, index) => ({
+            id: `company-${index}`,
+            type: 'companyNode',
+            position: { x: 100 * index, y: 100 },
+            data: { label: company.name },
+        })));
         console.log("Companies from Redux store:", companies);
     }
 

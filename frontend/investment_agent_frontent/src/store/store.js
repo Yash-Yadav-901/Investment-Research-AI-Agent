@@ -4,7 +4,7 @@ import { combineReducers } from "redux";
 import { persistReducer, persistStore, FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from "redux-persist";
 import {workspacesReducer} from "./workspaces";
 import { createMigrate } from "redux-persist";
-import InsideWorkSpacesReducer from "./InsideWorkSpaces";
+import {InsideWorkSpacesReducer} from "./InsideWorkSpaces";
 
 
 const rootReducer = combineReducers({

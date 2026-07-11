@@ -10,7 +10,7 @@ const prisma = new PrismaClient();
 
 const createCompanyInfo = asyncHandler(async (req, res) => {
     const { userId, workspaceId } = getAuth(req);
-    const { company_name } = req.body;
+    const { company_name, companyNodeData } = req.body;
 
     if (!userId || !workspaceId) {
         throw new ApiError(401, "Unauthorized");
@@ -37,7 +37,8 @@ const createCompanyInfo = asyncHandler(async (req, res) => {
             data: {
                 name: company_name,
                 workspaceId: workspaceId,
-                rawData: analysisResult
+                rawData: analysisResult,
+                companyNodeData: companyNodeData || null
             }
         });
 
