@@ -1,5 +1,70 @@
 import react from "react";
-import {useState, useEffect} from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
-
 import axiosInstance from "../../axiosInstance";
+import { setCompanies, removeCompany, updateCompany, updateCompany } from "../../store/InsideWorkSpaces";
+import {
+    ReactFlow,
+    Background,
+    Controls,
+    applyNodeChanges,
+    applyEdgeChanges,
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
+
+
+const MainWorkspace = () => {
+    const [nodes, setNodes] = useState([]);
+    const [edges, setEdges] = useState([]);
+    const dispatch = useDispatch();
+
+    const companies = useSelector((state) => state.InsideWorkSpaces.Companies);
+    if(!companies || companies.length === 0) {
+        console.log("No companies found in the Redux store.");
+    } else {
+        console.log("Companies from Redux store:", companies);
+    }
+
+    useEffect(() => {
+        const fetchCompanies = async () => {
+            try {
+                const response = await axiosInstance.get("/companies");
+                if (response.data && Array.isArray(response.data)) {
+                    dispatch(setCompanies(response.data));
+                } else {
+                    console.error("Invalid response data:", response.data);
+                }
+            } catch (error) {
+                console.error("Error fetching companies:", error);
+            }
+        };
+
+        fetchCompanies();
+    }, [dispatch]);
+
+    const onNodesChange = useCallback(
+        (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
+        []
+    );
+
+    const onEdgesChange = useCallback(
+        (changes) => setEdges((eds) => applyEdgeChanges(changes, eds)),
+        []
+    );
+
+    return (
+        <div style={{ width: '100%', height: '100vh' }}>
+            <ReactFlow
+                nodes={nodes}
+                edges={edges}
+                onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
+                fitView
+            >
+                <Background />
+                <Controls />
+            </ReactFlow>
+        </div>
+    );
+
+}

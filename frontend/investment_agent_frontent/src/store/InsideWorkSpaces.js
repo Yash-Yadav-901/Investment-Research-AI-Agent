@@ -21,10 +21,10 @@ const InsideWorkSpacesSlice = createSlice({
         },
         addCompany(state, action) {
             state.Companies.push(action.payload);
-        },
+        }
     },
 });
 
-export const {setCompanies, removeCompany, updateCompany} = InsideWorkSpacesSlice.actions;
+export const {setCompanies, removeCompany, updateCompany, addCompany} = InsideWorkSpacesSlice.actions;
 
 export default InsideWorkSpacesSlice.reducer;
