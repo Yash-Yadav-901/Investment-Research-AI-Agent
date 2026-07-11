@@ -19,6 +19,8 @@ const createWorkspace = asyncHandler(async (req, res) => {
     if (!userId) {
         throw new ApiError(401, "Unauthorized");
     }
+    console.log("name", name);
+    console.log("userId", userId);
     try {
         const workspace = await prisma.workspace.create({
             data: {
@@ -30,6 +32,7 @@ const createWorkspace = asyncHandler(async (req, res) => {
         return res.status(201).json(new ApiResponse(201, workspace, "Workspace created successfully"));
     }
     catch (error) { 
+        console.log("Error while creating workspace:", error);
     throw new ApiError(500, "Error while creating workspace");
 }
 });
@@ -51,6 +54,7 @@ const getWorkspaces = asyncHandler(async (req, res) => {
 
         return res.status(200).json(new ApiResponse(200, workspaces, "Workspaces fetched successfully"));
     } catch (error) {
+        console.log("Error while fetching workspaces:", error);
         throw new ApiError(500, "Error while fetching workspaces");
     }
 });
@@ -140,7 +144,7 @@ const getWorkspaceAndCompaniesByWorkspaceId = asyncHandler(async (req, res) => {
 
     const userExists = await prisma.user.findUnique({
         where: {
-            clerkId: userId
+            id: userId
         }
     });
 

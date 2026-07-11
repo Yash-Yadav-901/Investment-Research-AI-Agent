@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
 import { useDispatch } from 'react-redux';
+
 
 
 const formatCurrency = (val) => {
@@ -27,7 +25,7 @@ const formatNumber = (val, dec = 2) => {
     return Number(val).toFixed(dec);
 };
 
-export default function App({rawData}) {
+export default function CompanyDashboard({rawData}) {
     const [isMinimized, setIsMinimized] = useState(false);
     const [chatMessages, setChatMessages] = useState([
         {
@@ -550,3 +548,4 @@ Provide analytical, helpful, and concise answers based strictly on the provided 
         </div>
     );
 }
+

@@ -11,19 +11,23 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import CompanyInputBox from "./intialInputBox/CompanyInputBox";
+import CompanyDashboard from "./companies/CompanyDashboard";
 import { useParams } from "react-router-dom";
 
 const nodeTypes = {
     inputBox: CompanyInputBox,
-    companyNode: CompanyInputBox,
+    companyNode: CompanyDashboard,
 };
 
 const MainWorkspace = () => {
-    const [nodes, setNodes] = useState([{ id: '1', type: 'inputBox', position: { x: 0, y: 0 }, data: {} }]);
+    const { workspaceId } = useParams();
+    const [nodes, setNodes] = useState([{ id: '1', type: 'inputBox', position: { x: 0, y: 0 }, data: {workspaceId} }]);
     const [edges, setEdges] = useState([]);
     const dispatch = useDispatch();
     const companies = useSelector((state) => state.InsideWorkSpaces.Companies);
-    const { workspaceId } = useParams();
+
+    console.log("main ",workspaceId);
+    
 
     // Fetch companies for this workspace
     useEffect(() => {
@@ -47,7 +51,7 @@ const MainWorkspace = () => {
 
     // Sync Redux companies → React Flow nodes (in useEffect to avoid infinite loop)
     useEffect(() => {
-        const inputNode = { id: '1', type: 'inputBox', position: { x: 0, y: 0 }, data: {} };
+        const inputNode = { id: '1', type: 'inputBox', position: { x: 0, y: 0 }, data: { workspaceId } };
         if (!companies || companies.length === 0) {
             setNodes([inputNode]);
         } else {
@@ -61,7 +65,7 @@ const MainWorkspace = () => {
                 }))
             ]);
         }
-    }, [companies]); // only re-runs when companies array changes
+    }, [companies, workspaceId]); // only re-runs when companies array or workspaceId changes
 
     const onNodesChange = useCallback(
         (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
@@ -100,6 +104,7 @@ const MainWorkspace = () => {
                 edges={edges}
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
+                nodeTypes={nodeTypes}
                 fitView
             >
                 <Background />

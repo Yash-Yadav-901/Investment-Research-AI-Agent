@@ -5,9 +5,11 @@ import { addCompany } from "../../../store/InsideWorkSpaces.js";
 import { v4 as uuidv4 } from 'uuid';
 
 
-const CompanyInputBox = () => {
+const CompanyInputBox = ({data}) => {
     const [companyName, setCompanyName] = useState("");
     const dispatch = useDispatch();
+    const {workspaceId}=data;
+    console.log("company input box ",data);
 
     const handleAddCompany = async () => {
         if (!companyName.trim()) {
@@ -23,7 +25,7 @@ const CompanyInputBox = () => {
                     y: Math.floor(Math.random() * 400), 
                 },
             };
-            const response = await axiosInstance.post("/companies", { name: companyName, companyNodeData });
+            const response = await axiosInstance.post("/api/v1/company/create", { company_name: companyName, companyNodeData, workspaceId });
             if (response.data) {
                 dispatch(addCompany(response.data));
                 setCompanyName(""); // Clear the input field after adding
@@ -36,7 +38,7 @@ const CompanyInputBox = () => {
     };
 
     return (
-        <div className="company-input-box">
+        <div className="border-2 border-gray-200 rounded-lg p-4">
             <input
                 type="text"
                 value={companyName}

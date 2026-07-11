@@ -57,7 +57,7 @@ const ContentList = () => {
                             className="mb-2"
                             style={{ cursor: 'pointer' }}
                         >
-                            <img src="./images.jpeg" alt="Workspace" />
+                            <img src="./images (1).png" alt="Workspace" />
                             <span>{ws.name || ws}</span>
                         </div>
                     ))}
