@@ -1,7 +1,7 @@
 import react from "react";
 import { useState, useEffect, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import axiosInstance from "../../axiosInstance";
+import axiosInstance from "../../utils/axiosConfig";
 import { setCompanies, removeCompany, updateCompany } from "../../store/InsideWorkSpaces";
 import {
     ReactFlow,

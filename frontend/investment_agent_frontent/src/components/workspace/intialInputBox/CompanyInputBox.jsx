@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useDispatch } from "react-redux";
-import axiosInstance from "../../../axiosInstance";
-import { addCompany } from "../../../store/InsideWorkSpaces";
+import axiosInstance from "../../../utils/axiosConfig.js";
+import { addCompany } from "../../../store/InsideWorkSpaces.js";
 import { v4 as uuidv4 } from 'uuid';
 
 
