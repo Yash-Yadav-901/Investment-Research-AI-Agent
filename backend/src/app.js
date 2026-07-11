@@ -28,10 +28,13 @@ app.use(express.static('public'));
 import userRouter from "./routes/user.route.js";
 import workspaceRouter from "./routes/workspace.route.js";
 import companyInfoRouter from "./routes/company.route.js";
+import reportRouter from "./routes/report.route.js";
 
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/workspace", workspaceRouter);
 app.use("/api/v1/company", companyInfoRouter);
+app.use("/api/v1/report", reportRouter);
+
 
 
 import { errorHandler } from "./middlewares/error.middleware.js";

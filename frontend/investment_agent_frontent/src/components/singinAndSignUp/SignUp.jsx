@@ -10,10 +10,8 @@ const SignUpPage = () => {
             background: 'linear-gradient(135deg, #0f0c29, #302b63, #24243e)',
         }}>
             <SignUp
-                routing="path"
-                path="/sign-up"
+                fallbackRedirectUrl="/home"
                 signInUrl="/sign-in"
-                afterSignUpUrl="/home"
             />
         </div>
     );

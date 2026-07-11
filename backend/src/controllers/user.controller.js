@@ -1,73 +1,68 @@
-import { asyncHandler } from "../utils/async_handler";
-import { ApiResponse } from "../utils/api_response";
-import { ApiError } from "../utils/api_error";
-import {PrismaClient} from   "@prisma/client";
-import {getAuth} from '@clerk/express'
-
+import { asyncHandler } from "../utils/async_handler.js";
+import { ApiResponse } from "../utils/api_response.js";
+import { ApiError } from "../utils/api_error.js";
+import { PrismaClient } from "@prisma/client";
+import { getAuth, clerkClient } from '@clerk/express';
 
 const prisma = new PrismaClient();
 
+const signup = asyncHandler(async (req, res) => {
+    const auth = getAuth(req);
 
-const signup= asyncHandler(async(req, res) => { 
-     try {                                           
-        const auth = getAuth(req);
-        
-        if(!auth) {
-            throw new ApiError(401, "Unauthorized")
-        }
-        
-        const user = await prisma.user.create({
-            data: {
-                email: auth.emailAddress,
-                clerkId: auth.userId
+    if (!auth?.userId) {
+        throw new ApiError(401, "Unauthorized");
+    }
+
+    try {
+        // Fetch email from Clerk since getAuth() doesn't include it
+        const clerkUser = await clerkClient.users.getUser(auth.userId);
+        const email = clerkUser.emailAddresses[0]?.emailAddress;
+
+        // Upsert: if user already exists (e.g. logged in before) return them, else create
+        const user = await prisma.user.upsert({
+            where: { id: auth.userId },
+            update: {},
+            create: {
+                id: auth.userId,
+                email: email,
             }
-        })
+        });
 
         return res.status(201).json(
-            new ApiResponse(200, user, "User created successfully")
+            new ApiResponse(201, user, "User created successfully")
         );
-
-
-     } catch (error) {
-        console.log("error in login", error);
-        throw new ApiError(401, "Something went wrong in login");
-     }
+    } catch (error) {
+        console.error("Error in signup:", error);
+        throw new ApiError(500, "Something went wrong during signup");
+    }
 });
 
 
-const get_profile= asyncHandler(async(req, res)=>{
+const get_profile = asyncHandler(async (req, res) => {
+    const auth = getAuth(req);
+
+    if (!auth?.userId) {
+        throw new ApiError(401, "Unauthorized");
+    }
+
     try {
-        const auth = getAuth(req);
-
-        if(!auth){
-            throw new ApiError(401, "Unauthorized");
-        }
-
         const user = await prisma.user.findUnique({
             where: {
-                clerkId: auth.userId
+                id: auth.userId   // schema uses id (Clerk userId) as primary key
             }
         });
-        
-        if(!user){
+
+        if (!user) {
             throw new ApiError(404, "User not found");
         }
 
         return res.status(200).json(
             new ApiResponse(200, user, "User profile fetched successfully")
         );
-
-        
     } catch (error) {
-        console.log("error in login", error);
-        throw new ApiError(401, "Something went wrong in login");
+        console.error("Error in get_profile:", error);
+        throw new ApiError(500, "Something went wrong fetching profile");
     }
-})
+});
 
-
-
-
-export {signup, get_profile};
-
-
-
+export { signup, get_profile };

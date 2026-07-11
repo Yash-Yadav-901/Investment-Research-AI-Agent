@@ -1,8 +1,8 @@
-import { asyncHandler } from "../utils/async_handler";
-import { ApiResponse } from "../utils/api_response";
-import { ApiError } from "../utils/api_error";
+import { asyncHandler } from "../utils/async_handler.js";
+import { ApiResponse } from "../utils/api_response.js";
+import { ApiError } from "../utils/api_error.js";
 import { PrismaClient } from "@prisma/client";
-import { getAuth } from '@clerk/express'
+import { getAuth } from '@clerk/express';
 
 
 const prisma = new PrismaClient();

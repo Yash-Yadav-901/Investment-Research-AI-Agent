@@ -1242,8 +1242,7 @@ const app = workflow.compile({
 
 
 
-
-export async function researchAndAnalysis({companyName }) {
+ async function researchAndAnalysis({companyName }) {
     
     if (
         !companyName ||
@@ -1314,4 +1313,4 @@ Never fabricate unavailable information.
     }
 }
 
-export { researchAndAnalysis };
+export {researchAndAnalysis};

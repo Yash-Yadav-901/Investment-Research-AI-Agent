@@ -26,6 +26,6 @@ const workspacesSlice = createSlice({
     },
 });
 
-export const {setWorkspaces, setCurrentWorkspace} = workspacesSlice.actions;
+export const {setWorkspaces, setCurrentWorkspace, addNewWorkspace, removeWorkspace} = workspacesSlice.actions;
 
 export const workspacesReducer = workspacesSlice.reducer;

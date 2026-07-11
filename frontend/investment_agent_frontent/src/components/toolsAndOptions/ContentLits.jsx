@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import axiosInstance from "../../axiosInstance";
+import axiosInstance from "../../utils/axiosConfig.js";
 import { useDispatch, useSelector } from "react-redux";
-import { addNewContent, setWorkspaces } from "../../store/contentSlice";
+import { addNewWorkspace, setWorkspaces } from "../../store/workspaces.js";
 import { useNavigate } from "react-router-dom";
 
 const ContentList = () => {
@@ -12,14 +12,16 @@ const ContentList = () => {
     useEffect(() => {
         const fetchContent = async () => {
             try {
-                const response = await axiosInstance.get("/content");
-                if (response.data && Array.isArray(response.data)) {
-                    dispatch(setWorkspaces(response.data));
+                const response = await axiosInstance.get("/api/v1/workspace/list");
+                // Backend wraps data in ApiResponse: { statusCode, data: [...], message }
+                const data = response.data?.data ?? response.data;
+                if (data && Array.isArray(data)) {
+                    dispatch(setWorkspaces(data));
                 } else {
-                    console.error("Invalid response data:", response.data);
+                    console.error("Unexpected response shape:", response.data);
                 }
             } catch (error) {
-                console.error("Error fetching content:", error);
+                console.error("Error fetching workspaces:", error);
             }
         };
 
@@ -29,9 +31,7 @@ const ContentList = () => {
     const navigate = useNavigate();
 
     const handleWorkspaceClick = (workspaceId) => {
-        console.log("Workspace clicked:", workspaceId);
         navigate(`/workspace/${workspaceId}`);
-        
     };
 
     return (
@@ -42,7 +42,7 @@ const ContentList = () => {
 
             <div>
                 <h2>Create New Workspace</h2>
-                <div onClick={() => setShowAddWorkspacePopup(true)}>
+                <div onClick={() => setShowAddWorkspacePopup(true)} style={{ cursor: 'pointer' }}>
                     <img src="./images (1).png" alt="Add Workspace" />
                 </div>
             </div>
@@ -51,7 +51,12 @@ const ContentList = () => {
                 <h2 className="text-xl font-bold mb-4">Existing Workspaces</h2>
                 <div className="grid grid-cols-5 gap-4 p-4">
                     {workspaces.map((ws, index) => (
-                        <div onClick={() => handleWorkspaceClick(ws.id || index)} key={index} className="mb-2">
+                        <div
+                            onClick={() => handleWorkspaceClick(ws.id || index)}
+                            key={ws.id || index}
+                            className="mb-2"
+                            style={{ cursor: 'pointer' }}
+                        >
                             <img src="./images.jpeg" alt="Workspace" />
                             <span>{ws.name || ws}</span>
                         </div>
@@ -67,17 +72,20 @@ const AddWorkspacePopupInput = ({ onClose }) => {
     const dispatch = useDispatch();
 
     const handleAddContent = async () => {
+        if (!newWorkspaceName.trim()) return;
         try {
-            const response = await axiosInstance.post("/content", { name: newWorkspaceName });
-            if (response.data) {
-                dispatch(addNewContent(response.data));
+            const response = await axiosInstance.post("/api/v1/workspace/create", { name: newWorkspaceName });
+            // Backend wraps result in ApiResponse: { statusCode, data: workspace, message }
+            const newWorkspace = response.data?.data ?? response.data;
+            if (newWorkspace) {
+                dispatch(addNewWorkspace(newWorkspace));
                 setNewWorkspaceName("");
-                onClose(); // close popup after adding
+                onClose();
             } else {
                 console.error("Invalid response data:", response.data);
             }
         } catch (error) {
-            console.error("Error adding content:", error);
+            console.error("Error adding workspace:", error);
         }
     };
 

@@ -1,5 +1,5 @@
 import {signup, get_profile} from "../controllers/user.controller.js";
-import Router from "express";
+import {Router} from "express";
 
 const userRouter = Router();
 

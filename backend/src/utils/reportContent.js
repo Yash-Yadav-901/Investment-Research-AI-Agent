@@ -352,4 +352,4 @@ function renderReportHTML(company) {
   `;
 }
 
-module.exports = { renderReportHTML };
+export { renderReportHTML };
