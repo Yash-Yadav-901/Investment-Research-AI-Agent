@@ -14,7 +14,7 @@ const InsideWorkSpacesSlice = createSlice({
             state.Companies = action.payload;
         },
         removeCompany(state, action) {
-            state.Companies = state.Companies.filter((_, index) => index !== action.payload);
+            state.Companies = state.Companies.filter((c) => c.id !== action.payload && c.id?.toString() !== action.payload?.toString());
         },
         updateCompany(state, action) {
             const { index, updatedCompany } = action.payload;

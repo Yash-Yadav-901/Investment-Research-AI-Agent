@@ -57,12 +57,15 @@ const MainWorkspace = () => {
         } else {
             setNodes([
                 inputNode,
-                ...companies.map((company, index) => ({
-                    id: company.companyNodeData?.id || company.id.toString(),
-                    type: 'companyNode',
-                    position: company.companyNodeData?.position || { x: 250, y: index * 150 },
-                    data: company?.rawData || {},
-                }))
+                ...companies.map((company, index) => {
+                    if (!company) return null;
+                    return {
+                        id: company.companyNodeData?.id || company.id?.toString() || `comp-${index}`,
+                        type: 'companyNode',
+                        position: company.companyNodeData?.position || { x: 250, y: index * 150 },
+                        data: company,
+                    };
+                }).filter(Boolean)
             ]);
         }
     }, [companies, workspaceId]); // only re-runs when companies array or workspaceId changes
@@ -86,7 +89,7 @@ const MainWorkspace = () => {
                 id: `e${rootNodeId}-${node.id}`,
                 source: rootNodeId,
                 target: node.id,
-                style: { stroke: '#000' },
+                style: { stroke: '#000000ff' },
             }));
         setEdges(newEdges);
     }, [nodes]);

@@ -2,11 +2,9 @@ import { ChatGroq } from "@langchain/groq";
 import {
     MessagesAnnotation,
     StateGraph,
-    MemorySaver,
 } from "@langchain/langgraph";
 import { ToolNode } from "@langchain/langgraph/prebuilt";
 import { tool } from "@langchain/core/tools";
-import readline from "node:readline/promises";
 import YahooFinance from "yahoo-finance2";
 import { tavily } from "@tavily/core";
 import { z } from "zod";
@@ -36,7 +34,6 @@ if (!process.env.TAVILY_API_KEY) {
 // 1. GLOBAL CLIENTS
 
 
-const checkpointer = new MemorySaver();
 const yahooFinance = new YahooFinance();
 
 const baseModel = new ChatGroq({
@@ -916,10 +913,7 @@ const InvestmentReportSchema = z.object({
 
                 evidence: z.string(),
 
-                source: z.enum([
-                    "Yahoo Finance",
-                    "Tavily",
-                ]),
+                source: z.string(),
             })
         ),
     }),
@@ -1233,9 +1227,7 @@ const workflow =
 // COMPILE GRAPH
 
 
-const app = workflow.compile({
-    checkpointer,
-});
+const app = workflow.compile();
 
 
 //TERMINAL RUNTIME

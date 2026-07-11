@@ -36,11 +36,21 @@ const createCompanyInfo = asyncHandler(async (req, res) => {
     try {
         const analysisResult = await researchAndAnalysis({ companyName: company_name });
         console.log("analysisResult", analysisResult);
+
+        let parsedResult = analysisResult;
+        if (typeof analysisResult === 'string') {
+            try {
+                parsedResult = JSON.parse(analysisResult);
+            } catch (e) {
+                console.warn("Failed to parse analysisResult JSON:", e);
+            }
+        }
+
         const companyInfo = await prisma.company.create({
             data: {
                 name: company_name,
                 workspaceId: parseInt(workspaceId),
-                rawData: analysisResult,
+                rawData: parsedResult,
                 companyNodeData: companyNodeData || null
             }
         });

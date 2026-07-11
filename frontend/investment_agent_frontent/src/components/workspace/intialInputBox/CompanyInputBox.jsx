@@ -5,6 +5,8 @@ import { addCompany } from "../../../store/InsideWorkSpaces.js";
 import { v4 as uuidv4 } from 'uuid';
 
 
+import { Handle, Position } from '@xyflow/react';
+
 const CompanyInputBox = ({data}) => {
     const [companyName, setCompanyName] = useState("");
     const dispatch = useDispatch();
@@ -26,8 +28,8 @@ const CompanyInputBox = ({data}) => {
                 },
             };
             const response = await axiosInstance.post("/api/v1/company/create", { company_name: companyName, companyNodeData, workspaceId });
-            if (response.data) {
-                dispatch(addCompany(response.data));
+            if (response.data?.data) {
+                dispatch(addCompany(response.data.data));
                 setCompanyName(""); // Clear the input field after adding
             } else {
                 console.error("Invalid response data:", response.data);
@@ -38,7 +40,7 @@ const CompanyInputBox = ({data}) => {
     };
 
     return (
-        <div className="border-2 border-gray-200 rounded-lg p-4">
+        <div className="border-2 border-gray-200 rounded-lg p-4 relative">
             <input
                 type="text"
                 value={companyName}
@@ -48,6 +50,7 @@ const CompanyInputBox = ({data}) => {
             <button onClick={handleAddCompany}>
                 Analyze
             </button>
+            <Handle type="source" position={Position.Right} id="a" />
         </div>
     );
 };
