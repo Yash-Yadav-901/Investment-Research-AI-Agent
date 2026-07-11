@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axiosInstance from "../../axiosInstance";
 import { useDispatch, useSelector } from "react-redux";
 import { addNewContent, setWorkspaces } from "../../store/contentSlice";
+import { useNavigate } from "react-router-dom";
 
 const ContentList = () => {
     const dispatch = useDispatch();
@@ -25,6 +26,14 @@ const ContentList = () => {
         fetchContent();
     }, [dispatch]);
 
+    const navigate = useNavigate();
+
+    const handleWorkspaceClick = (workspaceId) => {
+        console.log("Workspace clicked:", workspaceId);
+        navigate(`/workspace/${workspaceId}`);
+        
+    };
+
     return (
         <div className="content-list">
             {showAddWorkspacePopup && (
@@ -40,13 +49,14 @@ const ContentList = () => {
 
             <div>
                 <h2 className="text-xl font-bold mb-4">Existing Workspaces</h2>
-                <ul>
+                <div className="grid grid-cols-5 gap-4 p-4">
                     {workspaces.map((ws, index) => (
-                        <li key={index} className="mb-2">
-                            {ws.name || ws}
-                        </li>
+                        <div onClick={() => handleWorkspaceClick(ws.id || index)} key={index} className="mb-2">
+                            <img src="./images.jpeg" alt="Workspace" />
+                            <span>{ws.name || ws}</span>
+                        </div>
                     ))}
-                </ul>
+                </div>
             </div>
         </div>
     );

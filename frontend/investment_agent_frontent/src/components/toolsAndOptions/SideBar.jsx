@@ -1,10 +1,10 @@
 import React from 'react'
-
+import {NavLink} from 'react-router-dom'
 const labels = [
-    { id: 1, name: 'Home', href: '#' },
-    { id: 2, name: 'Workspaces', href: '#' },
-    { id: 3, name: 'Settings', href: '#' },
-    { id: 4, name: 'Logout', href: '#' },
+    { id: 1, name: 'Home', path: '/' },
+    { id: 2, name: 'Workspaces', path: '/workspaces' },
+    { id: 3, name: 'Settings', path: '/settings' },
+    { id: 4, name: 'Logout', path: '/logout' },
 ]
 
 const SideBar = () =>{
@@ -17,9 +17,9 @@ const SideBar = () =>{
             <ul>
                 {labels.map((label) => (
                     <li key={label.id} className='mb-2'>
-                        <a href={label.href} className='hover:text-gray-400'>
+                        <NavLink to={label.path} className='hover:text-gray-400'>
                             {label.name}
-                        </a>
+                        </NavLink>
                     </li>
                 ))}
             </ul>

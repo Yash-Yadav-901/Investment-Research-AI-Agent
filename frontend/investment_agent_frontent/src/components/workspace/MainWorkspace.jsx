@@ -12,7 +12,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import CompanyInputBox from "./intialInputBox/CompanyInputBox";
-
+import { useParams } from "react-router-dom";
 
 const nodeTypes = {
     inputBox : CompanyInputBox,
@@ -36,10 +36,12 @@ const MainWorkspace = () => {
         console.log("Companies from Redux store:", companies);
     }
 
+    const { workspaceId } = useParams();
+    console.log("Workspace ID:", workspaceId);
     useEffect(() => {
         const fetchCompanies = async () => {
             try {
-                const response = await axiosInstance.get("/companies");
+                const response = await axiosInstance.get(`/api/v1/workspace/${workspaceId}`);
                 if (response.data && Array.isArray(response.data)) {
                     dispatch(setCompanies(response.data));
                 } else {
@@ -82,6 +84,10 @@ const MainWorkspace = () => {
     };
 
     return (
+        <div>
+            <nav>
+                <h1 className="text-xl font-bold"></h1>
+            </nav>
         <div style={{ width: '100%', height: '100vh' }}>
             <ReactFlow
                 nodes={nodes}
@@ -93,6 +99,7 @@ const MainWorkspace = () => {
                 <Background />
                 <Controls />
             </ReactFlow>
+        </div>
         </div>
     );
 
