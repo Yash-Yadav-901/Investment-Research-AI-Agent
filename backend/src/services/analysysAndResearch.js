@@ -10,7 +10,6 @@ import { tavily } from "@tavily/core";
 import { z } from "zod";
 import "dotenv/config";
 
-// ENVIRONMENT VALIDATION
 
 
 if (!process.env.GROQ_API_KEY) {
@@ -31,7 +30,6 @@ if (!process.env.TAVILY_API_KEY) {
     );
 }
 
-// 1. GLOBAL CLIENTS
 
 
 const yahooFinance = new YahooFinance();
@@ -43,7 +41,7 @@ const baseModel = new ChatGroq({
     maxRetries: 4,
 });
 
-// Custom error class so controllers can distinguish rate-limit from generic errors
+
 class RateLimitError extends Error {
     constructor(message) {
         super(message);
@@ -53,7 +51,6 @@ class RateLimitError extends Error {
 }
 
 
-// HELPER FUNCTIONS
 
 function normalizeTicker(ticker) {
     return String(ticker ?? "")
@@ -135,7 +132,7 @@ function explainModelError(error) {
 }
 
 
-//  TICKER RESOLUTION
+
 
 
 async function resolveTicker(ticker, market) {
@@ -147,7 +144,7 @@ async function resolveTicker(ticker, market) {
         );
     }
 
-    // Already explicit Indian Yahoo ticker
+
     if (
         market === "INDIAN" &&
         (
@@ -186,11 +183,11 @@ async function resolveTicker(ticker, market) {
             }
 
 
-            // INDIAN MARKET
+
 
 
             if (market === "INDIAN") {
-                // 1. Exact NSE symbol
+
                 const exactNse = quotes.find((quote) => {
                     const symbol =
                         quote?.symbol?.toUpperCase();
@@ -202,7 +199,6 @@ async function resolveTicker(ticker, market) {
                     return exactNse.symbol;
                 }
 
-                // 2. Prefer NSE equity
                 const nseEquity = quotes.find(
                     (quote) => {
                         const symbol =
@@ -219,7 +215,7 @@ async function resolveTicker(ticker, market) {
                     return nseEquity.symbol;
                 }
 
-                // 3. Any NSE result
+       
                 const anyNse = quotes.find(
                     (quote) =>
                         quote?.symbol?.endsWith(".NS")
@@ -229,7 +225,7 @@ async function resolveTicker(ticker, market) {
                     return anyNse.symbol;
                 }
 
-                // 4. Prefer BSE equity
+   
                 const bseEquity = quotes.find(
                     (quote) => {
                         const symbol =
@@ -246,7 +242,7 @@ async function resolveTicker(ticker, market) {
                     return bseEquity.symbol;
                 }
 
-                // 5. Any BSE result
+         
                 const anyBse = quotes.find(
                     (quote) =>
                         quote?.symbol?.endsWith(".BO")
@@ -258,7 +254,7 @@ async function resolveTicker(ticker, market) {
             }
 
 
-            // GLOBAL MARKET
+        
 
 
             if (market === "GLOBAL") {
@@ -289,7 +285,6 @@ async function resolveTicker(ticker, market) {
         }
     }
 
-    // Final fallback for simple Indian ticker
     if (
         market === "INDIAN" &&
         /^[A-Z0-9&-]+$/.test(rawTicker)
@@ -300,8 +295,6 @@ async function resolveTicker(ticker, market) {
     return rawTicker;
 }
 
-
-//TOOL: LIVE MARKET PRICE
 
 
 const getLivePriceTool = tool(
@@ -423,7 +416,7 @@ const getLivePriceTool = tool(
 );
 
 
-// TOOL: FINANCIAL FUNDAMENTALS
+
 
 
 const getFundamentalsTool = tool(
@@ -469,7 +462,7 @@ const getFundamentalsTool = tool(
                 summary?.assetProfile ?? {};
 
 
-            // FINANCIAL METRICS
+
 
 
             const peRatio =
@@ -670,7 +663,7 @@ const getFundamentalsTool = tool(
 );
 
 
-//TOOL: MARKET NEWS
+
 
 
 const getWebNewsTool = tool(
@@ -786,7 +779,7 @@ const getWebNewsTool = tool(
 );
 
 
-//TOOL REGISTRY
+
 
 
 const tools = [
@@ -798,7 +791,6 @@ const tools = [
 const toolNode = new ToolNode(tools);
 
 
-// STRUCTURED INVESTMENT REPORT SCHEMA
 
 
 const InvestmentReportSchema = z.object({
@@ -899,7 +891,7 @@ const InvestmentReportSchema = z.object({
         ),
     }),
 
-    // DETAILED EVIDENCE-BASED DECISION EXPLANATION
+
 
 
     decisionAnalysis: z.object({
@@ -933,7 +925,7 @@ const InvestmentReportSchema = z.object({
     disclaimer: z.string(),
 });
 
-//AGENT NODE
+
 
 
 async function callModel(state) {
@@ -1021,7 +1013,6 @@ After all necessary tool calls and results are available, stop calling tools.
     };
 }
 
-//  STRUCTURED REPORT NODE
 
 
 async function structureReportNode(state) {
@@ -1207,7 +1198,7 @@ The rationale should provide a concise overall summary of:
     };
 }
 
-// CONDITIONAL ROUTING
+
 
 
 function shouldContinue(state) {
@@ -1230,7 +1221,7 @@ function shouldContinue(state) {
 }
 
 
-// LANGGRAPH WORKFLOW
+
 
 
 const workflow =
@@ -1277,13 +1268,13 @@ const workflow =
         );
 
 
-// COMPILE GRAPH
+
 
 
 const app = workflow.compile();
 
 
-//TERMINAL RUNTIME
+
 
 
 
@@ -1300,7 +1291,7 @@ async function researchAndAnalysis({ companyName }) {
     }
 
     const MAX_RETRIES = 2;
-    const RETRY_DELAY_MS = 15000; // 15 seconds — enough for Groq TPM window to reset
+    const RETRY_DELAY_MS = 15000;
 
     for (let attempt = 1; attempt <= MAX_RETRIES + 1; attempt++) {
         try {
