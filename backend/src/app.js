@@ -4,7 +4,7 @@ import { clerkMiddleware } from "@clerk/express";
 
 const app = express();
 
-const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
+const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173,https://investment-research-ai-agent-iota.vercel.app')
   .split(',')
   .map(o => o.trim());
 
@@ -12,11 +12,19 @@ app.use(cors({
     origin: (origin, callback) => {
         // Allow requests with no origin (curl, Postman, mobile apps)
         if (!origin) return callback(null, true);
-        if (allowedOrigins.includes(origin)) return callback(null, true);
-        callback(new Error(`CORS: origin ${origin} not allowed`));
+        
+        const isAllowed = allowedOrigins.includes(origin) || 
+                          /^https?:\/\/localhost:\d+$/.test(origin) || 
+                          origin.endsWith('.vercel.app');
+                          
+        if (isAllowed) {
+            return callback(null, true);
+        }
+        
+        return callback(null, false);
     },
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
 }));
 
 app.use(clerkMiddleware());
