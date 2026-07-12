@@ -4,6 +4,7 @@ import axiosInstance from "../../../utils/axiosConfig.js";
 import { addCompany } from "../../../store/InsideWorkSpaces.js";
 import { v4 as uuidv4 } from 'uuid';
 import { Handle, Position } from '@xyflow/react';
+import { toast } from 'react-hot-toast';
 
 const CompanyInputBox = ({ data }) => {
     const [companyName, setCompanyName] = useState("");
@@ -13,7 +14,7 @@ const CompanyInputBox = ({ data }) => {
 
     const handleAddCompany = async () => {
         if (!companyName.trim()) {
-            alert("Please enter a company name.");
+            toast.error("Please enter a company name.");
             return;
         }
 
@@ -30,11 +31,23 @@ const CompanyInputBox = ({ data }) => {
             if (response.data?.data) {
                 dispatch(addCompany(response.data.data));
                 setCompanyName(""); 
+                toast.success(`Successfully analyzed ${companyName}!`);
             } else {
                 console.error("Invalid response data:", response.data);
+                toast.error("Invalid response from server.");
             }
         } catch (error) {
             console.error("Error adding company:", error);
+            const status = error.response?.status;
+            let message = "Failed to add company.";
+            if (status === 429) {
+                message = "Rate limit reached. Please wait a moment.";
+            } else if (error.response?.data?.message) {
+                message = error.response.data.message;
+            } else if (error.message) {
+                message = error.message;
+            }
+            toast.error(message);
         } finally {
             setIsLoading(false);
         }

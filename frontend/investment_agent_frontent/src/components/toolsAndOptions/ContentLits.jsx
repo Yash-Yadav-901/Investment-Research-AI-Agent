@@ -3,6 +3,7 @@ import axiosInstance from "../../utils/axiosConfig.js";
 import { useDispatch, useSelector } from "react-redux";
 import { addNewWorkspace, setWorkspaces, removeWorkspace } from "../../store/workspaces.js";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
 
 const CartoonFolderIcon = ({ size = "100%", isAddButton = false }) => {
     return (
@@ -88,10 +89,11 @@ const ContentList = () => {
             });
             if (response.data) {
                 dispatch(removeWorkspace(id));
+                toast.success("Workspace deleted successfully!");
             }
         } catch (error) {
             console.error("Error deleting workspace:", error);
-            alert("Failed to delete workspace");
+            toast.error(error.response?.data?.message || "Failed to delete workspace.");
         }
     };
 
@@ -190,19 +192,34 @@ const AddWorkspacePopupInput = ({ onClose }) => {
     const dispatch = useDispatch();
 
     const handleAddContent = async () => {
-        if (!newWorkspaceName.trim()) return;
+        if (!newWorkspaceName.trim()) {
+            toast.error("Please enter a workspace name.");
+            return;
+        }
         try {
             const response = await axiosInstance.post("/api/v1/workspace/create", { name: newWorkspaceName });
             const newWorkspace = response.data?.data ?? response.data;
             if (newWorkspace) {
                 dispatch(addNewWorkspace(newWorkspace));
                 setNewWorkspaceName("");
+                toast.success(`Created workspace "${newWorkspace.name || newWorkspaceName}"!`);
                 onClose();
             } else {
                 console.error("Invalid response data:", response.data);
+                toast.error("Failed to parse workspace creation response.");
             }
         } catch (error) {
             console.error("Error adding workspace:", error);
+            const status = error.response?.status;
+            let message = "Failed to create workspace.";
+            if (status === 429) {
+                message = "Rate limit reached. Please wait a moment.";
+            } else if (error.response?.data?.message) {
+                message = error.response.data.message;
+            } else if (error.message) {
+                message = error.message;
+            }
+            toast.error(message);
         }
     };
 

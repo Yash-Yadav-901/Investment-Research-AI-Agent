@@ -7,6 +7,7 @@ import { store, persistor } from './store/store.js'
 import { PersistGate } from 'redux-persist/integration/react'
 import { createBrowserRouter, RouterProvider, createRoutesFromElements, Route, Navigate } from "react-router-dom";
 import axiosInstance from './utils/axiosConfig';
+import { Toaster } from 'react-hot-toast';
 
 import AppLayout from './components/toolsAndOptions/AppLayout.jsx'
 import WorkspaceLayout from './components/workspace/WorkspaceLayout.jsx'
@@ -87,6 +88,22 @@ createRoot(document.getElementById('root')).render(
     <ClerkProvider publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}>
       <Provider store={store}>
         <PersistGate loading={<FullPageLoader message="Syncing local storage..." />} persistor={persistor}>
+          <Toaster 
+            position="top-right"
+            toastOptions={{
+              style: {
+                border: '4px solid #0F172A',
+                padding: '16px',
+                color: '#0F172A',
+                fontFamily: 'sans-serif',
+                fontWeight: '900',
+                textTransform: 'uppercase',
+                borderRadius: '16px',
+                boxShadow: '4px 4px 0px 0px #0F172A',
+                background: '#FFFFFF',
+              },
+            }}
+          />
           <RouterProvider router={router} />
         </PersistGate>
       </Provider>

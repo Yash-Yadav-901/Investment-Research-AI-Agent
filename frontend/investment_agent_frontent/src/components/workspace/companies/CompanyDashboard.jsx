@@ -3,6 +3,7 @@ import { Handle, Position } from '@xyflow/react';
 import { useDispatch } from 'react-redux';
 import axiosInstance from '../../../utils/axiosConfig';
 import { removeCompany } from '../../../store/InsideWorkSpaces';
+import { toast } from 'react-hot-toast';
 
 const formatCurrency = (val) => {
     if (val === undefined || val === null) return "N/A";
@@ -63,9 +64,10 @@ export default function CompanyDashboard({ data }) {
         try {
             await axiosInstance.delete(`/api/v1/company/remove/${companyId}`);
             dispatch(removeCompany(companyId));
+            toast.success(`Deleted ${payload.metadata?.companyName || 'company'} successfully!`);
         } catch (error) {
             console.error("Failed to delete company:", error);
-            alert("Failed to delete company from database.");
+            toast.error("Failed to delete company from database.");
         }
     };
 
@@ -93,6 +95,7 @@ export default function CompanyDashboard({ data }) {
             window.URL.revokeObjectURL(url);
         } catch (error) {
             console.error("Failed to download PDF report:", error);
+            toast.error("Failed to download PDF report.");
         } finally {
             setIsDownloading(false);
         }
@@ -188,7 +191,15 @@ Provide analytical, helpful, and concise answers based strictly on the provided 
             const answer = await callGroq(userMessage.text, chatMessages);
             setChatMessages(prev => [...prev, { sender: "assistant", text: answer }]);
         } catch (err) {
-            setChatMessages(prev => [...prev, { sender: "assistant", text: `Error: ${err.message}` }]);
+            console.error("Chat message error:", err);
+            let message = "Failed to get response from assistant.";
+            if (err.message?.includes("rate_limit_exceeded") || err.message?.includes("429")) {
+                message = "Rate limit reached. Please wait a moment.";
+            } else if (err.message) {
+                message = err.message;
+            }
+            toast.error(message);
+            setChatMessages(prev => [...prev, { sender: "assistant", text: `Error: ${message}` }]);
         } finally {
             setIsTyping(false);
         }
