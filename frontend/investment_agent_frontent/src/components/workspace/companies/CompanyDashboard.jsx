@@ -117,47 +117,58 @@ export default function CompanyDashboard({ data }) {
         );
     }
 
-    const callGemini = async (userPrompt, currentHistory) => {
-        const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
-        const systemPrompt = `You are a professional financial analyst AI assistant. You have access to this real-time Deep Report Dashboard payload for NVIDIA Corporation (NVDA):
+    const callGroq = async (userPrompt, currentHistory) => {
+        const apiKey = import.meta.env.VITE_GROQ_API_KEY;
+        const modelName = import.meta.env.VITE_GROQ_MODEL || "llama-3.3-70b-versatile";
+        const companyName = payload.metadata?.companyName || "the company";
+
+        const systemPrompt = `You are a professional financial analyst AI assistant. You have access to this real-time Deep Report Dashboard payload for ${companyName}:
 ${JSON.stringify(payload, null, 2)}
 
-Provide analytical, helpful, and concise answers based strictly on the provided payload. Avoid speculative claims not represented in the data. If the user asks general questions outside this context, anchor the answer back to NVDA's current data.`;
+Provide analytical, helpful, and concise answers based strictly on the provided payload. Avoid speculative claims not represented in the data. If the user asks general questions outside this context, anchor the answer back to the current company data. and if the user`;
 
         const formattedHistory = currentHistory.map(msg => ({
-            role: msg.sender === 'user' ? 'user' : 'model',
-            parts: [{ text: msg.text }]
+            role: msg.sender === 'user' ? 'user' : 'assistant',
+            content: msg.text
         }));
 
         const payloadBody = {
-            contents: [
+            model: modelName,
+            messages: [
+                { role: "system", content: systemPrompt },
                 ...formattedHistory,
-                { role: "user", parts: [{ text: userPrompt }] }
+                { role: "user", content: userPrompt }
             ],
-            systemInstruction: { parts: [{ text: systemPrompt }] }
+            temperature: 0.2
         };
 
         let attempts = 0;
-        const maxRetries = 5;
+        const maxRetries = 3;
 
         const executeCall = async () => {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+            const response = await fetch(`https://api.groq.com/openai/v1/chat/completions`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${apiKey}`
+                },
                 body: JSON.stringify(payloadBody)
             });
-            if (!response.ok) throw new Error("Fetch failed");
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error?.message || "Groq request failed");
+            }
             return response.json();
         };
 
         while (attempts < maxRetries) {
             try {
                 const result = await executeCall();
-                return result.candidates?.[0]?.content?.parts?.[0]?.text || "No response details generated.";
+                return result.choices?.[0]?.message?.content || "No response details generated.";
             } catch (err) {
                 attempts++;
                 if (attempts >= maxRetries) {
-                    throw new Error("Unable to connect to financial brain right now. Please try again.");
+                    throw err;
                 }
                 await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempts) * 1000));
             }
@@ -174,7 +185,7 @@ Provide analytical, helpful, and concise answers based strictly on the provided 
         setIsTyping(true);
 
         try {
-            const answer = await callGemini(userMessage.text, chatMessages);
+            const answer = await callGroq(userMessage.text, chatMessages);
             setChatMessages(prev => [...prev, { sender: "assistant", text: answer }]);
         } catch (err) {
             setChatMessages(prev => [...prev, { sender: "assistant", text: `Error: ${err.message}` }]);
