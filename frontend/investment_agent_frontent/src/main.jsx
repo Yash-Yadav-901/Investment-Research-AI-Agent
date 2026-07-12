@@ -9,11 +9,12 @@ import { createBrowserRouter, RouterProvider, createRoutesFromElements, Route, N
 import axiosInstance from './utils/axiosConfig';
 
 import AppLayout from './components/toolsAndOptions/AppLayout.jsx'
- import WorkspaceLayout from './components/workspace/WorkspaceLayout.jsx'
+import WorkspaceLayout from './components/workspace/WorkspaceLayout.jsx'
 import MainWorkspace from './components/workspace/MainWorkspace.jsx'
 import SignInPage from './components/singinAndSignUp/SignIn.jsx'
 import SignUpPage from './components/singinAndSignUp/SignUp.jsx'
 import ContentList from './components/toolsAndOptions/ContentLits.jsx'
+import PageNotFound from './components/WrongPages/PageNotFound.jsx'
 
 // Guard with DB sync
 const ProtectedRoute = ({ children }) => {
@@ -61,7 +62,7 @@ const router = createBrowserRouter(
       </Route>
 
       <Route path="/" element={<Navigate to="/sign-in" replace />} />
-      <Route path="*" element={<div className="text-white text-center mt-[20vh]">404 Not Found</div>} />
+      <Route path="*" element={<PageNotFound />} />
     </Route>
   )
 );

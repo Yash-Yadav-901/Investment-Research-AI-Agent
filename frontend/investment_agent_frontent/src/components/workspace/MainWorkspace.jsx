@@ -21,21 +21,16 @@ const nodeTypes = {
 
 const MainWorkspace = () => {
     const { workspaceId } = useParams();
-    const [nodes, setNodes] = useState([{ id: '1', type: 'inputBox', position: { x: 0, y: 0 }, data: {workspaceId} }]);
+    const [nodes, setNodes] = useState([{ id: '1', type: 'inputBox', position: { x: 0, y: 0 }, data: { workspaceId } }]);
     const [edges, setEdges] = useState([]);
     const dispatch = useDispatch();
     const companies = useSelector((state) => state.InsideWorkSpaces.Companies);
 
-    console.log("main ",workspaceId);
-    
-
-    // Fetch companies for this workspace
     useEffect(() => {
         if (!workspaceId) return;
         const fetchCompanies = async () => {
             try {
                 const response = await axiosInstance.get(`/api/v1/workspace/${workspaceId}`);
-                // ApiResponse shape: { statusCode, data: { id, name, companies: [...] }, message }
                 const companies = response.data?.data?.companies;
                 if (companies && Array.isArray(companies)) {
                     dispatch(setCompanies(companies));
@@ -47,9 +42,8 @@ const MainWorkspace = () => {
             }
         };
         fetchCompanies();
-    }, [dispatch, workspaceId]); // re-fetch when navigating between workspaces
+    }, [dispatch, workspaceId]); 
 
-    // Sync Redux companies → React Flow nodes (in useEffect to avoid infinite loop)
     useEffect(() => {
         const inputNode = { id: '1', type: 'inputBox', position: { x: 0, y: 0 }, data: { workspaceId } };
         if (!companies || companies.length === 0) {
@@ -62,13 +56,13 @@ const MainWorkspace = () => {
                     return {
                         id: company.companyNodeData?.id || company.id?.toString() || `comp-${index}`,
                         type: 'companyNode',
-                        position: company.companyNodeData?.position || { x: 250, y: index * 150 },
+                        position: company.companyNodeData?.position || { x: 300, y: index * 200 },
                         data: company,
                     };
                 }).filter(Boolean)
             ]);
         }
-    }, [companies, workspaceId]); // only re-runs when companies array or workspaceId changes
+    }, [companies, workspaceId]); 
 
     const onNodesChange = useCallback(
         (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
@@ -80,7 +74,6 @@ const MainWorkspace = () => {
         []
     );
 
-    // Auto-connect all company nodes to the root input node
     useEffect(() => {
         const rootNodeId = '1';
         const newEdges = nodes
@@ -89,7 +82,8 @@ const MainWorkspace = () => {
                 id: `e${rootNodeId}-${node.id}`,
                 source: rootNodeId,
                 target: node.id,
-                style: { stroke: '#000000ff' },
+                animated: true,
+                style: { stroke: '#0F172A', strokeWidth: 3 },
             }));
         setEdges(newEdges);
     }, [nodes]);
@@ -101,7 +95,7 @@ const MainWorkspace = () => {
     };
 
     return (
-        <div style={{ width: '100%', height: '100%' }}>
+        <div style={{ width: '100%', height: '100%' }} className="bg-[#FFFBEB]">
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
@@ -110,8 +104,8 @@ const MainWorkspace = () => {
                 nodeTypes={nodeTypes}
                 fitView
             >
-                <Background />
-                <Controls />
+                <Background color="#0F172A" gap={20} size={1.5} variant="dots" opacity={0.15} />
+                <Controls className="!bg-white !border-2 !border-[#0F172A] !rounded-xl !shadow-[2px_2px_0px_0px_#0F172A] [&>button]:!border-b [&>button]:!border-[#0F172A]/10 last:[&>button]:!border-b-0" />
             </ReactFlow>
         </div>
     );
