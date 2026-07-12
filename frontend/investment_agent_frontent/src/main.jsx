@@ -8,7 +8,7 @@ import { PersistGate } from 'redux-persist/integration/react'
 import { createBrowserRouter, RouterProvider, createRoutesFromElements, Route, Navigate } from "react-router-dom";
 import axiosInstance from './utils/axiosConfig';
 
-import CombineTools from './components/toolsAndOptions/CombineTools.jsx'
+import AppLayout from './components/toolsAndOptions/AppLayout.jsx'
 import MainWorkspace from './components/workspace/MainWorkspace.jsx'
 import SignInPage from './components/singinAndSignUp/SignIn.jsx'
 import SignUpPage from './components/singinAndSignUp/SignUp.jsx'
@@ -48,9 +48,12 @@ const router = createBrowserRouter(
       <Route path="/sign-in/*" element={<SignInPage />} />
       <Route path="/sign-up/*" element={<SignUpPage />} />
 
-      <Route path="/home" element={<ProtectedRoute><CombineTools /></ProtectedRoute>} />
-      <Route path="/workspaces" element={<ProtectedRoute><ContentList /></ProtectedRoute>} />   
-      <Route path="/workspace/:workspaceId" element={<ProtectedRoute><MainWorkspace /></ProtectedRoute>} />
+      {/* All protected pages share the same layout: Sidebar on left, content on right */}
+      <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+        <Route path="/home" element={<div className="p-6 text-white">Welcome Home!</div>} />
+        <Route path="/workspaces" element={<ContentList />} />
+        <Route path="/workspace/:workspaceId" element={<MainWorkspace />} />
+      </Route>
 
       <Route path="/" element={<Navigate to="/sign-in" replace />} />
       <Route path="*" element={<div className="text-white text-center mt-[20vh]">404 Not Found</div>} />

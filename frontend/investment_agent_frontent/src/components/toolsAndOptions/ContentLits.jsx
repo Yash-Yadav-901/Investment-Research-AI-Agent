@@ -35,15 +35,20 @@ const ContentList = () => {
     };
 
     return (
-        <div className="content-list">
+        <div className="">
             {showAddWorkspacePopup && (
                 <AddWorkspacePopupInput onClose={() => setShowAddWorkspacePopup(false)} />
             )}
 
-            <div>
+            <div className="">
                 <h2>Create New Workspace</h2>
-                <div onClick={() => setShowAddWorkspacePopup(true)} style={{ cursor: 'pointer' }}>
-                    <img src="./images (1).png" alt="Add Workspace" />
+                <div>
+                    <img
+                        src="./images (1).png"
+                        alt="Add Workspace"
+                        onClick={() => setShowAddWorkspacePopup(true)}
+                        style={{ cursor: 'pointer' }}
+                    />
                 </div>
             </div>
 
