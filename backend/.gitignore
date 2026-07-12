@@ -47,10 +47,10 @@ data/
 *.cache
 *.parcel-cache
 
-# Prisma
-prisma/schema.prisma
-prisma/client
-prisma/migration
+# # Prisma
+# prisma/schema.prisma
+# prisma/client
+# prisma/migration
 
 /src/generated/prisma
 

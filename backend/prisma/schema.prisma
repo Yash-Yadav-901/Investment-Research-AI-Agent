@@ -1,0 +1,65 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String      @id                // Clerk user ID (string UUID)
+  email      String      @unique
+  createdAt  DateTime    @default(now())
+  workspaces Workspace[]
+}
+
+model Workspace {
+  id        Int        @id @default(autoincrement())
+  name      String
+  ownerId   String
+  owner     User       @relation(fields: [ownerId], references: [id])
+  createdAt DateTime   @default(now())
+  companies Company[]
+}
+
+model Company {
+  id        Int        @id @default(autoincrement())
+  workspace Workspace  @relation(fields: [workspaceId], references: [id])
+  workspaceId Int
+  name      String
+  // decision  String?    // "Invest" or "Pass"
+  // confidence Int?
+  // description String?    // summary of the company
+  // reasoning Json?      // structured reasoning (financials, sentiment, risks)
+  // metrics   Json?      // key metrics (marketCap, peRatio, growth, etc.)
+  rawData   Json?      // raw data from APIs or sources
+  companyNodeData Json?      // data from company node (if applicable)
+  createdAt DateTime   @default(now())
+  reports   Report[]
+  chats     Chat[]
+}
+
+model Report {
+  id        Int      @id @default(autoincrement())
+  company   Company  @relation(fields: [companyId], references: [id])
+  companyId Int
+  filePath  String
+  createdAt DateTime @default(now())
+}
+
+model Chat {
+  id        Int      @id @default(autoincrement())
+  company   Company  @relation(fields: [companyId], references: [id])
+  companyId Int
+  question  String
+  answer    String
+  createdAt DateTime @default(now())
+}

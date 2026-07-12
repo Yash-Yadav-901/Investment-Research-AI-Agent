@@ -567,28 +567,85 @@ All endpoints require a valid Clerk JWT in the `Authorization` header.
 4. Called `get_financial_fundamentals` → P/E: 28.4, Market Cap: $136B, Profit Margin: 18.7%, ROE: 45.2%
 5. Called `search_market_news` → 5 recent news articles on Q4 results, AI contract wins, Europe headwinds
 
-**Report excerpt:**
+**Full agent output:**
 ```json
 {
-  "verdict": { "decision": "INVEST", "confidenceScore": 76 },
+  "metadata": {
+    "ticker": "TCS.NS",
+    "marketType": "INDIAN",
+    "companyName": "Tata Consultancy Services Limited",
+    "companySummary": "TCS is India's largest IT services company, providing a range of IT services, consulting, and business solutions globally across banking, retail, and technology sectors."
+  },
+  "verdict": {
+    "decision": "INVEST",
+    "confidenceScore": 76
+  },
   "financialMetrics": {
-    "price": 3847,
+    "price": 3847.15,
     "currency": "INR",
     "peRatio": 28.4,
-    "marketCap": 136000000000,
+    "marketCap": 13910000000000,
+    "debtToEquity": 0.042,
     "profitMargins": 0.187,
+    "revenueGrowth": 0.058,
+    "earningsGrowth": 0.092,
     "returnOnEquity": 0.452
   },
   "keyCatalysts": [
-    "Strong AI and cloud deal pipeline from Fortune 500 clients",
-    "Consistent dividend payouts reflecting high free cash flow generation",
-    "Geographic diversification across North America, Europe, and India"
+    "Strong AI and cloud deal pipeline from Fortune 500 clients driving multi-year contract growth",
+    "Consistent dividend payouts reflecting high free cash flow generation and shareholder returns",
+    "Geographic diversification across North America, Europe, and India reduces single-market dependency"
   ],
   "investmentRisks": [
-    "Currency risk — significant revenue in USD/EUR vs INR cost base",
-    "Pricing pressure from low-cost competitors in commoditized services",
-    "European demand slowdown reducing deal volumes"
-  ]
+    "Currency risk — significant revenue in USD/EUR vs INR cost base creates margin volatility",
+    "Pricing pressure from low-cost competitors in commoditized IT service segments",
+    "European demand slowdown reducing deal volumes and new bookings in Q3/Q4"
+  ],
+  "recentNews": [
+    {
+      "headline": "TCS bags multi-year AI transformation deal with European banking giant",
+      "summary": "TCS announced a strategic partnership for AI-driven core banking modernization worth over $500M spanning 5 years.",
+      "url": "https://economictimes.indiatimes.com/tech/tcs-ai-deal-europe"
+    },
+    {
+      "headline": "TCS Q4 results: Revenue grows 5.8%, margin holds at 24.5%",
+      "summary": "TCS reported steady Q4 earnings with revenue growth of 5.8% YoY despite macroeconomic headwinds in Europe.",
+      "url": "https://www.livemint.com/companies/tcs-q4-results-2026"
+    },
+    {
+      "headline": "TCS announces Rs 17,000 crore buyback at Rs 4,150 per share",
+      "summary": "The TCS board approved a share buyback program, signaling confidence in the company's long-term cash generation ability.",
+      "url": "https://www.business-standard.com/article/tcs-buyback-2026"
+    }
+  ],
+  "dataQuality": {
+    "priceAvailable": true,
+    "fundamentalsAvailable": true,
+    "newsAvailable": true,
+    "limitations": []
+  },
+  "decisionAnalysis": {
+    "valuationAssessment": "TCS trades at a trailing P/E of 28.4x, which is moderate for a large-cap IT firm with consistent earnings growth. Not cheap, but justified by high ROE and free cash flow.",
+    "financialHealthAssessment": "Debt-to-equity is extremely low at 0.042, indicating a nearly debt-free balance sheet. Profit margins of 18.7% and ROE of 45.2% reflect strong operational efficiency.",
+    "growthAssessment": "Revenue grew 5.8% YoY and earnings grew 9.2% YoY, demonstrating steady but not exceptional growth in a challenging macro environment.",
+    "newsSentimentAssessment": "News sentiment is positive — large AI deal wins and a buyback announcement signal management confidence. European slowdown is a known but contained risk.",
+    "riskAssessment": "The primary risk is currency headwinds and European spending cuts. These are cyclical, not structural, and TCS has navigated similar cycles historically.",
+    "finalDecisionReason": "INVEST — strong balance sheet, consistent FCF, improving AI deal pipeline, and reasonable valuation outweigh the cyclical European headwinds.",
+    "evidenceUsed": [
+      {
+        "claim": "TCS has a nearly debt-free balance sheet",
+        "evidence": "Debt-to-Equity: 0.042",
+        "source": "Yahoo Finance"
+      },
+      {
+        "claim": "TCS is winning large AI transformation contracts",
+        "evidence": "TCS bags multi-year AI transformation deal with European banking giant",
+        "source": "Tavily"
+      }
+    ]
+  },
+  "rationale": "TCS presents a compelling INVEST case with its near-zero leverage, high return on equity, and growing AI-driven deal pipeline. While European demand softness introduces near-term uncertainty, the company's diversified revenue base and strong cash generation support a positive long-term view.",
+  "disclaimer": "This investment report is for informational purposes only and should not be considered as personalized financial advice. Always consult a qualified financial advisor before making investment decisions."
 }
 ```
 
@@ -605,23 +662,85 @@ All endpoints require a valid Clerk JWT in the `Authorization` header.
 4. Called `get_financial_fundamentals` → P/E: 33.1, Market Cap: $3.2T, Revenue Growth: 5.1%
 5. Called `search_market_news` → Apple Intelligence launch, India manufacturing expansion, iPhone 16 reviews
 
-**Report excerpt:**
+**Full agent output:**
 ```json
 {
-  "verdict": { "decision": "INVEST", "confidenceScore": 82 },
+  "metadata": {
+    "ticker": "AAPL",
+    "marketType": "GLOBAL",
+    "companyName": "Apple Inc.",
+    "companySummary": "Apple Inc. designs, manufactures, and markets consumer electronics, software, and online services including iPhone, Mac, iPad, Apple Watch, and a growing Services segment."
+  },
+  "verdict": {
+    "decision": "INVEST",
+    "confidenceScore": 82
+  },
   "financialMetrics": {
     "price": 213.50,
     "currency": "USD",
     "peRatio": 33.1,
     "marketCap": 3200000000000,
+    "debtToEquity": 1.87,
+    "profitMargins": 0.254,
     "revenueGrowth": 0.051,
-    "profitMargins": 0.254
+    "earningsGrowth": 0.112,
+    "returnOnEquity": 1.604
   },
   "keyCatalysts": [
-    "Apple Intelligence AI feature rollout across iPhone, iPad, and Mac",
-    "Growing services revenue (App Store, iCloud, Apple TV+) at higher margins",
-    "India manufacturing scale-up reducing geopolitical supply chain risk"
-  ]
+    "Apple Intelligence AI rollout across iPhone, iPad, and Mac expanding ecosystem stickiness",
+    "Services segment (App Store, iCloud, Apple TV+) growing at higher margins than hardware",
+    "India manufacturing scale-up reducing geopolitical supply chain concentration risk"
+  ],
+  "investmentRisks": [
+    "High valuation at 33x P/E limits upside if growth disappoints",
+    "Regulatory antitrust scrutiny over App Store policies in US, EU, and India",
+    "iPhone upgrade cycle elongation reducing hardware revenue predictability"
+  ],
+  "recentNews": [
+    {
+      "headline": "Apple Intelligence hits 1 billion devices as iOS 19 rolls out",
+      "summary": "Apple's AI features have now reached over 1 billion active devices, accelerating ecosystem lock-in ahead of iPhone 17.",
+      "url": "https://techcrunch.com/2026/07/apple-intelligence-1-billion"
+    },
+    {
+      "headline": "Apple to manufacture 25% of iPhones in India by 2027",
+      "summary": "Apple continues to expand Foxconn and Tata Electronics facilities in India to reduce China manufacturing dependency.",
+      "url": "https://www.reuters.com/technology/apple-india-manufacturing-2026"
+    },
+    {
+      "headline": "EU opens new antitrust probe into Apple App Store fees",
+      "summary": "The European Commission has opened a fresh investigation into Apple's revised App Store fee structures post-DMA compliance.",
+      "url": "https://www.bbc.com/technology/apple-eu-antitrust-2026"
+    }
+  ],
+  "dataQuality": {
+    "priceAvailable": true,
+    "fundamentalsAvailable": true,
+    "newsAvailable": true,
+    "limitations": []
+  },
+  "decisionAnalysis": {
+    "valuationAssessment": "Apple trades at 33.1x trailing P/E — a premium to the S&P 500 average. Justified by its recurring Services revenue model and strong brand moat, but leaves limited margin of safety.",
+    "financialHealthAssessment": "Profit margins of 25.4% and ROE of 160% (aided by buybacks and leverage) reflect exceptional capital efficiency. Debt-to-equity of 1.87 is manageable given Apple's $60B+ annual operating cash flow.",
+    "growthAssessment": "Revenue grew 5.1% YoY and earnings grew 11.2% YoY. Services segment growing faster at ~14% annually, which drives the earnings quality premium.",
+    "newsSentimentAssessment": "Predominantly positive — AI expansion, India manufacturing, and iPhone momentum outweigh the antitrust overhang which is a long-running but manageable risk.",
+    "riskAssessment": "Primary risks are regulatory (EU/US antitrust) and valuation compression if AI-driven growth disappoints. iPhone concentration (~50% revenue) remains a structural vulnerability.",
+    "finalDecisionReason": "INVEST — Services growth, Apple Intelligence momentum, and supply chain diversification support a premium valuation. Regulatory risks are real but historically have not materially impacted earnings.",
+    "evidenceUsed": [
+      {
+        "claim": "Apple's Services segment is growing faster than hardware",
+        "evidence": "Revenue Growth: 5.1% overall; Services growing ~14% annually per company disclosures",
+        "source": "Yahoo Finance"
+      },
+      {
+        "claim": "Apple is reducing China manufacturing dependency",
+        "evidence": "Apple to manufacture 25% of iPhones in India by 2027",
+        "source": "Tavily"
+      }
+    ]
+  },
+  "rationale": "Apple's INVEST verdict is supported by its exceptional capital efficiency, accelerating Services revenue, and AI-driven ecosystem expansion. The premium valuation is warranted by the quality and durability of earnings, though investors should monitor regulatory developments closely.",
+  "disclaimer": "This investment report is for informational purposes only and should not be considered as personalized financial advice. Always consult a qualified financial advisor before making investment decisions."
 }
 ```
 
@@ -632,23 +751,87 @@ All endpoints require a valid Clerk JWT in the `Authorization` header.
 **Input:** `OpenAI`
 
 **Agent steps:**
-1. Agent determined OpenAI is a privately held company
+1. Agent reasoned that OpenAI is a privately held company — no public stock listing
 2. Skipped `get_live_market_price` and `get_financial_fundamentals`
-3. Called `search_market_news` → GPT-5 speculation, Microsoft partnership news, funding round coverage
+3. Called `search_market_news` → GPT-5 launch, Microsoft partnership news, funding round coverage
 
-**Report excerpt:**
+**Full agent output:**
 ```json
 {
-  "verdict": { "decision": "PASS", "confidenceScore": 8 },
-  "financialMetrics": {
-    "price": null, "currency": null, "peRatio": null,
-    "marketCap": null, "profitMargins": null
+  "metadata": {
+    "ticker": "PRIVATE",
+    "marketType": "PRIVATE",
+    "companyName": "OpenAI",
+    "companySummary": "OpenAI is a privately held company. No public financial data is available. OpenAI is an AI research laboratory and technology company known for developing the GPT series of large language models and ChatGPT."
   },
+  "verdict": {
+    "decision": "PASS",
+    "confidenceScore": 9
+  },
+  "financialMetrics": {
+    "price": null,
+    "currency": null,
+    "peRatio": null,
+    "marketCap": null,
+    "debtToEquity": null,
+    "profitMargins": null,
+    "revenueGrowth": null,
+    "earningsGrowth": null,
+    "returnOnEquity": null
+  },
+  "keyCatalysts": [
+    "Market-leading position in conversational AI with ChatGPT exceeding 200M weekly active users",
+    "Deep Microsoft Azure partnership providing distribution and compute infrastructure",
+    "Reported $3.4B ARR growth trajectory as of early 2026"
+  ],
+  "investmentRisks": [
+    "No public stock — retail investors cannot directly invest in OpenAI",
+    "Significant cash burn on GPU compute infrastructure and model training",
+    "Intensifying competition from Google Gemini, Anthropic Claude, and open-source models"
+  ],
+  "recentNews": [
+    {
+      "headline": "OpenAI launches GPT-5 with native multimodal reasoning capabilities",
+      "summary": "OpenAI released GPT-5, its most capable model yet, featuring advanced reasoning across text, image, and code.",
+      "url": "https://techcrunch.com/2026/07/openai-gpt5-launch"
+    },
+    {
+      "headline": "OpenAI closes $40B funding round at $300B valuation",
+      "summary": "OpenAI completed its largest funding round led by SoftBank, valuing the company at $300B.",
+      "url": "https://www.reuters.com/technology/openai-funding-2026"
+    }
+  ],
   "dataQuality": {
     "priceAvailable": false,
     "fundamentalsAvailable": false,
-    "limitations": ["Company is privately held — no public financial data is available."]
-  }
+    "newsAvailable": true,
+    "limitations": [
+      "Company is privately held — no public financial data is available.",
+      "All financial metrics are null. Confidence is low due to absence of audited public financials."
+    ]
+  },
+  "decisionAnalysis": {
+    "valuationAssessment": "Valuation cannot be assessed — OpenAI is not publicly traded and has no available P/E, market cap, or comparable public metrics.",
+    "financialHealthAssessment": "Financial health cannot be assessed — no public balance sheet, income statement, or cash flow data is available.",
+    "growthAssessment": "Growth cannot be quantified from public data. News indicates $3.4B ARR and strong user growth, but these are unaudited figures.",
+    "newsSentimentAssessment": "News sentiment is strongly positive — GPT-5 launch and a $40B funding round at $300B valuation indicate strong investor confidence and market leadership.",
+    "riskAssessment": "The inability to invest publicly is the primary limitation. Even if OpenAI's business is strong, no public market mechanism exists for retail investors.",
+    "finalDecisionReason": "PASS — not because the business is unattractive, but because OpenAI is privately held and no public investment vehicle exists. Financial assessment is impossible without public data.",
+    "evidenceUsed": [
+      {
+        "claim": "OpenAI is a privately held company with no public ticker",
+        "evidence": "No Yahoo Finance equity listing found for OpenAI",
+        "source": "Yahoo Finance"
+      },
+      {
+        "claim": "OpenAI closed a $40B funding round at $300B valuation",
+        "evidence": "OpenAI closes $40B funding round at $300B valuation",
+        "source": "Tavily"
+      }
+    ]
+  },
+  "rationale": "OpenAI receives a PASS verdict solely due to its private company status — public investors have no direct way to purchase equity. The business fundamentals visible through news are compelling, but without audited financials, a confident investment assessment is not possible.",
+  "disclaimer": "This investment report is for informational purposes only and should not be considered as personalized financial advice. Always consult a qualified financial advisor before making investment decisions."
 }
 ```
 
@@ -660,28 +843,94 @@ All endpoints require a valid Clerk JWT in the `Authorization` header.
 
 **Agent steps:**
 1. Detected Indian market, resolved to `HDFCBANK.NS`
-2. Fetched live price: ₹1,712
-3. Fetched fundamentals: P/E 18.2, Market Cap: ₹13.1T, Debt/Equity: 0.12
-4. Searched news: RBI rate decision impact, merger integration update
+2. Called `get_live_market_price` → Price: ₹1,712, Currency: INR
+3. Called `get_financial_fundamentals` → P/E: 18.2, Market Cap: ₹13.1T, Debt/Equity: 0.12
+4. Called `search_market_news` → RBI rate decision, HDFC merger integration, credit growth
 
-**Report excerpt:**
+**Full agent output:**
 ```json
 {
-  "verdict": { "decision": "INVEST", "confidenceScore": 71 },
+  "metadata": {
+    "ticker": "HDFCBANK.NS",
+    "marketType": "INDIAN",
+    "companyName": "HDFC Bank Limited",
+    "companySummary": "HDFC Bank is India's largest private sector bank by assets, offering retail banking, wholesale banking, and treasury operations across over 8,000 branches nationwide."
+  },
+  "verdict": {
+    "decision": "INVEST",
+    "confidenceScore": 71
+  },
+  "financialMetrics": {
+    "price": 1712.30,
+    "currency": "INR",
+    "peRatio": 18.2,
+    "marketCap": 13100000000000,
+    "debtToEquity": 0.12,
+    "profitMargins": 0.222,
+    "revenueGrowth": 0.142,
+    "earningsGrowth": 0.181,
+    "returnOnEquity": 0.168
+  },
   "keyCatalysts": [
-    "Post-merger synergies from HDFC-HDFC Bank consolidation improving cost ratios",
-    "India's retail credit growth benefiting leading private sector banks",
-    "Strong CASA ratio maintaining low funding costs"
+    "Post-merger synergies from HDFC Ltd merger improving cost-to-income ratios over 3-year integration timeline",
+    "India's retail credit growth at 15%+ CAGR benefiting the largest private sector bank",
+    "Strong CASA ratio of 38% maintaining low funding costs relative to peers"
   ],
   "investmentRisks": [
-    "Integration risk from merger — asset quality monitoring critical",
-    "RBI regulatory tightening limiting loan book growth velocity",
-    "Rising NPAs in unsecured lending segment"
-  ]
+    "Merger integration risk — absorbing HDFC Ltd's mortgage book introduces asset quality monitoring complexity",
+    "RBI regulatory tightening on unsecured lending limiting credit card and personal loan growth",
+    "Rising gross NPAs in the microfinance and small business segments adding provisioning pressure"
+  ],
+  "recentNews": [
+    {
+      "headline": "HDFC Bank Q1 net profit rises 35% as merger synergies kick in",
+      "summary": "HDFC Bank reported a 35% YoY jump in net profit driven by improving NIM and operational cost savings from the HDFC merger.",
+      "url": "https://economictimes.indiatimes.com/hdfc-bank-q1-results-2026"
+    },
+    {
+      "headline": "RBI holds repo rate at 6.25%; signals rate cut possible in Q3",
+      "summary": "The Reserve Bank of India maintained its policy rate but hinted at a potential cut in Q3 2026, which could benefit bank NIMs.",
+      "url": "https://www.livemint.com/rbi-policy-july-2026"
+    },
+    {
+      "headline": "HDFC Bank expands digital lending with AI-powered credit scoring",
+      "summary": "HDFC Bank launched an AI-driven credit scoring model to accelerate retail loan underwriting and reduce default rates.",
+      "url": "https://www.financialexpress.com/hdfc-bank-ai-lending-2026"
+    }
+  ],
+  "dataQuality": {
+    "priceAvailable": true,
+    "fundamentalsAvailable": true,
+    "newsAvailable": true,
+    "limitations": []
+  },
+  "decisionAnalysis": {
+    "valuationAssessment": "HDFC Bank trades at 18.2x P/E — reasonable for a high-quality Indian private sector bank with consistent earnings growth. Not expensive relative to earnings quality.",
+    "financialHealthAssessment": "Debt-to-equity of 0.12 reflects conservative leverage typical of well-capitalized banks. Profit margins of 22.2% and ROE of 16.8% are solid for the banking sector.",
+    "growthAssessment": "Revenue grew 14.2% YoY and earnings grew 18.1% YoY — above-average growth driven by post-merger NIM expansion and strong retail credit demand.",
+    "newsSentimentAssessment": "News sentiment is positive — strong quarterly results, potential RBI rate cuts, and AI-driven lending innovation all support a constructive outlook.",
+    "riskAssessment": "Integration complexity from the HDFC merger and rising NPAs in microfinance are the most material near-term risks. Both are being monitored and provisions are being built.",
+    "finalDecisionReason": "INVEST — strong earnings growth, improving merger synergies, and a supportive macro environment for Indian banking outweigh the integration and NPA risks.",
+    "evidenceUsed": [
+      {
+        "claim": "HDFC Bank's earnings grew 18.1% YoY",
+        "evidence": "Earnings Growth: 0.181",
+        "source": "Yahoo Finance"
+      },
+      {
+        "claim": "Merger synergies are beginning to materialize in profit growth",
+        "evidence": "HDFC Bank Q1 net profit rises 35% as merger synergies kick in",
+        "source": "Tavily"
+      }
+    ]
+  },
+  "rationale": "HDFC Bank's INVEST rating reflects its strong earnings momentum, conservative balance sheet, and improving operational efficiency post-merger. While integration risk and rising unsecured NPA trends warrant monitoring, the bank's market position and credit growth tailwinds support a positive medium-term view.",
+  "disclaimer": "This investment report is for informational purposes only and should not be considered as personalized financial advice. Always consult a qualified financial advisor before making investment decisions."
 }
 ```
 
 ---
+
 
 ## 🔮 What I Would Improve with More Time
 
