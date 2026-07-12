@@ -810,6 +810,7 @@ const InvestmentReportSchema = z.object({
         marketType: z.enum([
             "INDIAN",
             "GLOBAL",
+            "PRIVATE",
         ]),
 
         companySummary: z.string(),

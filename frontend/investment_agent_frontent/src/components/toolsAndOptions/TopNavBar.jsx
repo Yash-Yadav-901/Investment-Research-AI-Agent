@@ -1,6 +1,8 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { useUser } from '@clerk/react';
+import { useDispatch, useSelector } from 'react-redux';
+import { setSearchQuery } from '../../store/workspaces.js';
 
 const pageTitles = {
     '/home': { title: 'Home', subtitle: 'Welcome back to your dashboard' },
@@ -10,6 +12,8 @@ const pageTitles = {
 const TopNavBar = ({ onMenuClick }) => {
     const location = useLocation();
     const { user } = useUser();
+    const dispatch = useDispatch();
+    const searchQuery = useSelector((state) => state.workspaces.searchQuery || "");
 
     const isWorkspacePage = location.pathname.startsWith('/workspace/');
 
@@ -59,6 +63,8 @@ const TopNavBar = ({ onMenuClick }) => {
                     <input
                         type="text"
                         placeholder="Search workspace..."
+                        value={searchQuery}
+                        onChange={(e) => dispatch(setSearchQuery(e.target.value))}
                         className="bg-white text-xs font-bold text-black placeholder-zinc-500 pl-10 pr-4 py-2 rounded-2xl border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:bg-[#edf5ff] w-48 transition-all duration-200 focus:w-60"
                     />
                 </div>

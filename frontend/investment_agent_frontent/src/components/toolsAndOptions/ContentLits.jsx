@@ -55,11 +55,14 @@ const CartoonFolderIcon = ({ size = "100%", isAddButton = false }) => {
 const ContentList = () => {
     const dispatch = useDispatch();
     const workspaces = useSelector((state) => state.workspaces.workspaces);
+    const searchQuery = useSelector((state) => state.workspaces.searchQuery || "");
     const [showAddWorkspacePopup, setShowAddWorkspacePopup] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const navigate = useNavigate();
 
     useEffect(() => {
         const fetchContent = async () => {
+            setIsLoading(true);
             try {
                 const response = await axiosInstance.get("/api/v1/workspace/list");
                 const data = response.data?.data ?? response.data;
@@ -70,6 +73,8 @@ const ContentList = () => {
                 }
             } catch (error) {
                 console.error("Error fetching workspaces:", error);
+            } finally {
+                setIsLoading(false);
             }
         };
 
@@ -95,6 +100,19 @@ const ContentList = () => {
             alert("Failed to delete workspace");
         }
     };
+
+    if (isLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen bg-[#fffcf5] text-slate-950 font-sans p-6">
+                <div className="relative w-24 h-20 animate-bounce">
+                    <CartoonFolderIcon isAddButton={false} />
+                </div>
+                <p className="mt-6 text-sm font-black uppercase tracking-wider text-slate-700 animate-pulse">
+                    Loading workspaces...
+                </p>
+            </div>
+        );
+    }
 
     return (
         <div className="p-6 min-h-screen bg-[#fffcf5] text-slate-950 font-sans">
@@ -129,31 +147,47 @@ const ContentList = () => {
                         <p className="text-sm font-bold text-zinc-500 uppercase tracking-wide">No active modules found. Click above to append one!</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 max-w-6xl">
-                        {workspaces.map((ws, index) => (
-                            <div
-                                onClick={() => handleWorkspaceClick(ws.id || index)}
-                                key={ws.id || index}
-                                className="relative flex flex-col items-center justify-center p-4 bg-white border-[3px] border-black rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all cursor-pointer group"
-                            >
-                                {/* Hover Close Trigger Button */}
-                                <button
-                                    onClick={(e) => handleDeleteWorkspace(e, ws.id)}
-                                    className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 absolute top-2 right-2 z-10 w-6 h-6 flex items-center justify-center bg-[#EF4444] hover:bg-[#DC2626] border-2 border-black text-black font-black text-[10px] rounded-lg shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)] active:translate-x-[0.5px] active:translate-y-[0.5px] active:shadow-none"
-                                    title="Delete Workspace"
-                                >
-                                    ✕
-                                </button>
+                    (() => {
+                        const filteredWorkspaces = workspaces.filter(ws => 
+                            (ws.name || "").toLowerCase().includes(searchQuery.toLowerCase())
+                        );
 
-                                <div className="w-24 h-20 mb-3">
-                                    <CartoonFolderIcon isAddButton={false} />
+                        if (filteredWorkspaces.length === 0 && searchQuery) {
+                            return (
+                                <div className="bg-white border-[3px] border-black border-dashed p-8 rounded-2xl max-w-xl text-center">
+                                    <p className="text-sm font-bold text-zinc-500 uppercase tracking-wide">No workspaces match "{searchQuery}"</p>
                                 </div>
-                                <span className="text-xs font-black uppercase text-center tracking-wide text-slate-900 truncate w-full px-1">
-                                    {ws.name || ws}
-                                </span>
+                            );
+                        }
+
+                        return (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 max-w-6xl">
+                                {filteredWorkspaces.map((ws, index) => (
+                                    <div
+                                        onClick={() => handleWorkspaceClick(ws.id || index)}
+                                        key={ws.id || index}
+                                        className="relative flex flex-col items-center justify-center p-4 bg-white border-[3px] border-black rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all cursor-pointer group"
+                                    >
+                                        {/* Hover Close Trigger Button */}
+                                        <button
+                                            onClick={(e) => handleDeleteWorkspace(e, ws.id)}
+                                            className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 absolute top-2 right-2 z-10 w-6 h-6 flex items-center justify-center bg-[#EF4444] hover:bg-[#DC2626] border-2 border-black text-black font-black text-[10px] rounded-lg shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)] active:translate-x-[0.5px] active:translate-y-[0.5px] active:shadow-none"
+                                            title="Delete Workspace"
+                                        >
+                                            ✕
+                                        </button>
+
+                                        <div className="w-24 h-20 mb-3">
+                                            <CartoonFolderIcon isAddButton={false} />
+                                        </div>
+                                        <span className="text-xs font-black uppercase text-center tracking-wide text-slate-900 truncate w-full px-1">
+                                            {ws.name || ws}
+                                        </span>
+                                    </div>
+                                ))}
                             </div>
-                        ))}
-                    </div>
+                        );
+                    })()
                 )}
             </div>
         </div>

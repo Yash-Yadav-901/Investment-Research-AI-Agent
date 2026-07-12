@@ -3,6 +3,7 @@ import {createSlice} from "@reduxjs/toolkit";
 const initialState = {
     workspaces: [],
     currentWorkspace: null,
+    searchQuery: "",
 };
 
 const workspacesSlice = createSlice({
@@ -23,9 +24,12 @@ const workspacesSlice = createSlice({
                 (workspace) => workspace.id !== action.payload
             );
         },
+        setSearchQuery(state, action) {
+            state.searchQuery = action.payload;
+        },
     },
 });
 
-export const {setWorkspaces, setCurrentWorkspace, addNewWorkspace, removeWorkspace} = workspacesSlice.actions;
+export const {setWorkspaces, setCurrentWorkspace, addNewWorkspace, removeWorkspace, setSearchQuery} = workspacesSlice.actions;
 
 export const workspacesReducer = workspacesSlice.reducer;
