@@ -29,12 +29,14 @@ import userRouter from "./routes/user.route.js";
 import workspaceRouter from "./routes/workspace.route.js";
 import companyInfoRouter from "./routes/company.route.js";
 import reportRouter from "./routes/report.route.js";
+import healthRouter from "./routes/healthCheck.route.js";
 
+app.use("/api/v1/health", healthRouter);
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/workspace", workspaceRouter);
 app.use("/api/v1/company", companyInfoRouter);
 app.use("/api/v1/report", reportRouter);
-
+app.use("/api/health", healthRouter);
 
 
 import { errorHandler } from "./middlewares/error.middleware.js";
