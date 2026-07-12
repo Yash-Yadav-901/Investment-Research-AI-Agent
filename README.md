@@ -2,6 +2,8 @@
 
 > 🚀 **Live Deployed App**: [investment-research-ai-agent-iota.vercel.app](https://investment-research-ai-agent-iota.vercel.app/)
 >
+> 📂 **GitHub Repository**: [github.com/Yash-Yadav-901/Investment-Research-AI-Agent](https://github.com/Yash-Yadav-901/Investment-Research-AI-Agent.git)
+>
 > A full-stack, LLM-powered financial intelligence platform that autonomously researches companies and produces structured investment reports using a multi-step agentic workflow.
 
 ---
@@ -991,6 +993,8 @@ AI Engineer & Full-Stack Developer
 ---
 
 🚀 **Try the Live App**: [investment-research-ai-agent-iota.vercel.app](https://investment-research-ai-agent-iota.vercel.app/)
+
+📂 **GitHub Repository**: [github.com/Yash-Yadav-901/Investment-Research-AI-Agent](https://github.com/Yash-Yadav-901/Investment-Research-AI-Agent.git)
 
 ---
 
