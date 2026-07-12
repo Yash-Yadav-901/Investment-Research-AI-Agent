@@ -1,5 +1,7 @@
 # 🧠 Investment Research AI Agent
 
+> 🚀 **Live Deployed App**: [investment-research-ai-agent-iota.vercel.app](https://investment-research-ai-agent-iota.vercel.app/)
+>
 > A full-stack, LLM-powered financial intelligence platform that autonomously researches companies and produces structured investment reports using a multi-step agentic workflow.
 
 ---
@@ -139,7 +141,7 @@ All expensive operations are cached:
 ## 📖 Steps to Use
 
 ### Step 1 — Sign In
-1. Open the app at `http://localhost:5173` (or your deployed URL)
+1. Open the app at [investment-research-ai-agent-iota.vercel.app](https://investment-research-ai-agent-iota.vercel.app/) (or run locally at `http://localhost:5173`)
 2. Click **Sign In** on the landing page
 3. Choose Google OAuth or Email/Password
 4. You are redirected to the Home dashboard after authentication
@@ -994,6 +996,10 @@ AI Engineer & Full-Stack Developer
 - GitHub: [github.com/Yash-Yadav-901](https://github.com/Yash-Yadav-901)
 - LinkedIn: [linkedin.com/in/yashyadav901](https://www.linkedin.com/in/yashyadav901/)
 - Email: yashyadav65378@gmail.com
+
+---
+
+🚀 **Try the Live App**: [investment-research-ai-agent-iota.vercel.app](https://investment-research-ai-agent-iota.vercel.app/)
 
 ---
 

@@ -20,7 +20,7 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-[#FFFBEB] text-[#0F172A] p-6 md:p-12 font-sans selection:bg-[#FCD34D] selection:text-[#0F172A]">
-      
+      {/* Hero Banner Section */}
       <div className="relative bg-[#FCD34D] border-4 border-[#0F172A] p-8 md:p-12 rounded-3xl shadow-[8px_8px_0px_0px_#0F172A] mb-12 overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8">
         <div className="flex-1 space-y-6">
           <span className="inline-flex items-center gap-1.5 bg-[#22C55E] text-[#0F172A] text-xs font-black uppercase tracking-widest px-3 py-1.5 border-2 border-[#0F172A] rounded-full shadow-[2px_2px_0px_0px_#0F172A]">
@@ -51,16 +51,17 @@ const Home = () => {
           </div>
         </div>
 
+        {/* Decorative Graphic Widget */}
         <div className="w-full md:w-80 flex justify-center items-center">
           <div className="relative bg-white border-4 border-[#0F172A] p-6 rounded-2xl shadow-[6px_6px_0px_0px_#0F172A] w-64 rotate-2 hover:rotate-0 transition-transform duration-200">
-            
+            {/* Window header */}
             <div className="flex items-center gap-2 border-b-4 border-[#0F172A] pb-3 mb-4">
               <span className="w-3.5 h-3.5 rounded-full bg-[#EF4444] border-2 border-[#0F172A]"></span>
               <span className="w-3.5 h-3.5 rounded-full bg-[#FCD34D] border-2 border-[#0F172A]"></span>
               <span className="w-3.5 h-3.5 rounded-full bg-[#22C55E] border-2 border-[#0F172A]"></span>
               <span className="text-[10px] font-black uppercase ml-auto text-slate-500">financial.dax</span>
             </div>
-            
+            {/* Widget layout */}
             <div className="space-y-3">
               <div className="bg-[#EF4444]/10 p-2 rounded-lg border-2 border-dashed border-[#EF4444]/60 text-center flex items-center justify-center gap-2">
                 <FaBolt className="text-[#EF4444]" />
@@ -79,6 +80,7 @@ const Home = () => {
         </div>
       </div>
 
+      {/* Project Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
         <div className="lg:col-span-2 bg-white border-4 border-[#0F172A] p-6 md:p-8 rounded-2xl shadow-[6px_6px_0px_0px_#0F172A]">
           <h2 className="text-xl md:text-2xl font-black uppercase tracking-wider mb-4 border-b-4 border-[#0F172A] pb-2 flex items-center gap-2">
@@ -94,6 +96,7 @@ const Home = () => {
           </div>
         </div>
 
+        {/* Tech Stack Box */}
         <div className="bg-[#3B82F6] border-4 border-[#0F172A] p-6 rounded-2xl shadow-[6px_6px_0px_0px_#0F172A] text-white">
           <h2 className="text-xl font-black uppercase tracking-wider mb-4 border-b-4 border-white pb-2 flex items-center gap-2">
             <FaTools className="text-[#FCD34D]" /> Tech Stack Architecture
@@ -131,12 +134,13 @@ const Home = () => {
         </div>
       </div>
 
+      {/* Features Grid */}
       <div id="features" className="mb-12">
         <h2 className="text-2xl font-black uppercase tracking-wider mb-8 text-center text-[#0F172A]">
           Key Platform Features
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          
+          {/* Feature 1 */}
           <div className="bg-[#FCD34D] border-4 border-[#0F172A] p-6 rounded-2xl shadow-[5px_5px_0px_0px_#0F172A] flex flex-col justify-between">
             <div>
               <div className="text-[#0F172A] text-3xl mb-3"><FaFolderOpen /></div>
@@ -147,6 +151,7 @@ const Home = () => {
             </div>
           </div>
 
+          {/* Feature 2 */}
           <div className="bg-[#FF9F1C] border-4 border-[#0F172A] p-6 rounded-2xl shadow-[5px_5px_0px_0px_#0F172A] flex flex-col justify-between">
             <div>
               <div className="text-[#0F172A] text-3xl mb-3"><FaChartBar /></div>
@@ -157,6 +162,7 @@ const Home = () => {
             </div>
           </div>
 
+          {/* Feature 3 */}
           <div className="bg-[#22C55E] border-4 border-[#0F172A] p-6 rounded-2xl shadow-[5px_5px_0px_0px_#0F172A] flex flex-col justify-between">
             <div>
               <div className="text-[#0F172A] text-3xl mb-3"><FaComments /></div>
@@ -167,6 +173,7 @@ const Home = () => {
             </div>
           </div>
 
+          {/* Feature 4 */}
           <div className="bg-[#3B82F6] border-4 border-[#0F172A] p-6 rounded-2xl shadow-[5px_5px_0px_0px_#0F172A] text-white flex flex-col justify-between">
             <div>
               <div className="text-white text-3xl mb-3"><FaBolt /></div>
@@ -179,6 +186,7 @@ const Home = () => {
         </div>
       </div>
 
+      {/* Steps to Use */}
       <div className="bg-white border-4 border-[#0F172A] p-8 rounded-2xl shadow-[6px_6px_0px_0px_#0F172A] mb-12">
         <h2 className="text-xl md:text-2xl font-black uppercase tracking-wider mb-6 border-b-4 border-[#0F172A] pb-2 text-[#0F172A] flex items-center gap-2">
           <FaTools className="text-[#3B82F6]" /> How To Use the Platform
@@ -216,9 +224,10 @@ const Home = () => {
         </div>
       </div>
 
+      {/* Developer Card (Yash Yadav) */}
       <div className="max-w-2xl mx-auto bg-white border-4 border-[#0F172A] p-6 md:p-8 rounded-3xl shadow-[8px_8px_0px_0px_#0F172A]">
         <div className="flex flex-col sm:flex-row items-center gap-6">
-          
+          {/* Avatar representation using SVG & Neo-brutalist circle wrapper */}
           <div className="w-24 h-24 rounded-full bg-[#FFCC4D] border-4 border-[#0F172A] shadow-[4px_4px_0px_0px_#0F172A] flex items-center justify-center shrink-0">
             <svg viewBox="0 0 100 100" className="w-16 h-16">
               <circle cx="50" cy="40" r="22" fill="#3B82F6" stroke="#0f172a" strokeWidth="4" />
@@ -235,7 +244,8 @@ const Home = () => {
             </span>
             <h2 className="text-2xl font-black uppercase text-[#0F172A] tracking-wide">Yash Yadav</h2>
             <p className="text-xs font-bold text-slate-600">
-              Yash Yadav is an AI Engineer and Full-Stack Developer specializing in next-generation agentic workflows, cached LLM microservices, and interactive analytical visualization suites.
+              Hi, I'm Yash Yadav, a Computer Science and Engineering student with hands-on experience in full-stack development, backend engineering, cloud computing, and DevOps, Gen AI. I enjoy building scalable software, solving real-world problems, and continuously improving my skills through challenging projects and data structures & algorithms.
+
             </p>
             <div className="flex flex-wrap justify-center sm:justify-start gap-4 pt-2">
               <a
@@ -247,7 +257,7 @@ const Home = () => {
                 <FaGithub /> GitHub Profile
               </a>
               <a
-                href="https://www.linkedin.com"
+                href="https://www.linkedin.com/in/yashyadav90/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 bg-[#3B82F6] hover:bg-[#2563EB] text-white font-black text-xs uppercase px-4 py-2 border-2 border-[#0F172A] rounded-lg shadow-[2.5px_2.5px_0px_0px_#FCD34D] hover:translate-x-[1.5px] hover:translate-y-[1.5px] hover:shadow-none active:translate-x-[2.5px] active:translate-y-[2.5px] transition-all"
