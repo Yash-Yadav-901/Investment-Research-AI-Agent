@@ -60,7 +60,10 @@ const createCompanyInfo = asyncHandler(async (req, res) => {
         );
     } catch (error) {
         console.error("Error in createCompanyInfo:", error);
-        throw new ApiError(500, "Something went wrong in createCompanyInfo");
+        if (error.statusCode === 429 || error.name === "RateLimitError") {
+            throw new ApiError(429, "AI service is temporarily rate-limited. Please wait a moment and try again.");
+        }
+        throw new ApiError(500, error.message || "Something went wrong in createCompanyInfo");
     }
 });
 

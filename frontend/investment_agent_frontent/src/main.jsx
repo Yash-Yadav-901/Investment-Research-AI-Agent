@@ -9,6 +9,7 @@ import { createBrowserRouter, RouterProvider, createRoutesFromElements, Route, N
 import axiosInstance from './utils/axiosConfig';
 
 import AppLayout from './components/toolsAndOptions/AppLayout.jsx'
+ import WorkspaceLayout from './components/workspace/WorkspaceLayout.jsx'
 import MainWorkspace from './components/workspace/MainWorkspace.jsx'
 import SignInPage from './components/singinAndSignUp/SignIn.jsx'
 import SignUpPage from './components/singinAndSignUp/SignUp.jsx'
@@ -48,10 +49,14 @@ const router = createBrowserRouter(
       <Route path="/sign-in/*" element={<SignInPage />} />
       <Route path="/sign-up/*" element={<SignUpPage />} />
 
-      {/* All protected pages share the same layout: Sidebar on left, content on right */}
+     
       <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
         <Route path="/home" element={<div className="p-6 text-white">Welcome Home!</div>} />
         <Route path="/workspaces" element={<ContentList />} />
+      </Route>
+
+     
+      <Route element={<ProtectedRoute><WorkspaceLayout /></ProtectedRoute>}>
         <Route path="/workspace/:workspaceId" element={<MainWorkspace />} />
       </Route>
 

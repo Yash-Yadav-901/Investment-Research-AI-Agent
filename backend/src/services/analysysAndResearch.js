@@ -40,8 +40,17 @@ const baseModel = new ChatGroq({
     apiKey: process.env.GROQ_API_KEY,
     model: process.env.GROQ_MODEL,
     temperature: 0,
-    maxRetries: 2,
+    maxRetries: 4,
 });
+
+// Custom error class so controllers can distinguish rate-limit from generic errors
+class RateLimitError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = "RateLimitError";
+        this.statusCode = 429;
+    }
+}
 
 
 // HELPER FUNCTIONS
@@ -1299,9 +1308,11 @@ Never fabricate unavailable information.
             report,
         };
     } catch (error) {
-        throw new Error(
-            explainModelError(error)
-        );
+        const message = explainModelError(error);
+        if (/rate limit|quota|too many requests/i.test(message)) {
+            throw new RateLimitError(message);
+        }
+        throw new Error(message);
     }
 }
 

@@ -40,17 +40,19 @@ const ContentList = () => {
                 <AddWorkspacePopupInput onClose={() => setShowAddWorkspacePopup(false)} />
             )}
 
-            <div className="">
+            <div className=" w-full">
                 <h2>Create New Workspace</h2>
                 <div>
                     <img
                         src="./images (1).png"
                         alt="Add Workspace"
                         onClick={() => setShowAddWorkspacePopup(true)}
-                        style={{ cursor: 'pointer' }}
+                        style={{ cursor: 'pointer' , width: "10%",height:"10%"}}
                     />
                 </div>
             </div>
+
+            <hr style={{ border: 'none', borderTop: '2px solid gray', margin: '10px 0', width: "75vw" }} />
 
             <div>
                 <h2 className="text-xl font-bold mb-4">Existing Workspaces</h2>

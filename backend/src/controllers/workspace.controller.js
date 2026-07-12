@@ -63,9 +63,13 @@ const updateWorkspaceName = asyncHandler(async (req, res) => {
     const { workspaceId, newName } = req.body;
     const auth = getAuth(req);
     const userId = auth.userId;
+    const parsedId = parseInt(workspaceId);
 
     if (!workspaceId || !newName) {
         throw new ApiError(400, "Workspace ID and new name are required");
+    }
+    if (isNaN(parsedId)) {
+        throw new ApiError(400, "Workspace ID must be a number");
     }
     if (!userId) {
         throw new ApiError(401, "Unauthorized");
@@ -73,7 +77,7 @@ const updateWorkspaceName = asyncHandler(async (req, res) => {
 
     try {
         const workspace = await prisma.workspace.findUnique({
-            where: { id: workspaceId },
+            where: { id: parsedId },
         });
 
         if (!workspace) {
@@ -84,12 +88,13 @@ const updateWorkspaceName = asyncHandler(async (req, res) => {
         }
 
         const updatedWorkspace = await prisma.workspace.update({
-            where: { id: workspaceId },
+            where: { id: parsedId },
             data: { name: newName },
         });
 
         return res.status(200).json(new ApiResponse(200, updatedWorkspace, "Workspace name updated successfully"));
     } catch (error) {
+        if (error instanceof ApiError) throw error;
         throw new ApiError(500, "Error while updating workspace name");
     }
 });
