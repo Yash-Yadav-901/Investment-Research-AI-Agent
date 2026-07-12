@@ -314,70 +314,61 @@ User (Clerk ID)
 
 ---
 
-## 🔑 Key Decisions & Trade-offs
+## 🔑 Key Decisions & Trade-offs (My Personal Approach)
 
-### 1. LangGraph for the agentic loop instead of a simple chain
-
-**Why:** A fixed chain (`fetch price → fetch fundamentals → fetch news → summarize`) cannot handle:
-- Private companies (skip financial tools entirely)
-- Ticker mismatches (detect and discard bad data)
-- Tool failures (continue without inventing data)
-
-LangGraph's conditional routing lets the agent make these decisions at runtime.
-
-**Trade-off:** More complex to reason about and debug; adds latency overhead per graph invocation.
+In building this system, I made several critical design choices to balance accuracy, latency, and usability. Here's a breakdown of what I chose, why I chose it, and the trade-offs I accepted:
 
 ---
 
-### 2. Groq (Llama-3.3-70b) as the LLM backbone
+### 1. I chose LangGraph for the agentic loop instead of a simple linear chain
 
-**Why:** Groq provides the fastest inference speeds for Llama 3.3 70B via their dedicated hardware (LPUs). For an interactive investment dashboard where users expect sub-10-second responses, inference latency matters enormously.
-
-**Trade-off:** Groq's free tier has aggressive rate limits (TPM/RPM caps). The agent includes automatic 15-second retry logic with up to 2 retries on rate-limit errors. Production deployment would require a paid tier.
-
----
-
-### 3. Yahoo Finance as the financial data source
-
-**Why:** Free, no API key required, covers both Indian (NSE/BSE) and Global markets. The `yahoo-finance2` library provides typed responses.
-
-**Trade-off:** Yahoo Finance is not an official data provider — it has no SLA. Data can lag, be incorrect, or become temporarily unavailable. For production, a Bloomberg/Refinitiv feed would be appropriate.
+* **Why I chose it:** I realized that a fixed sequence (e.g., `fetch price → fetch fundamentals → fetch news → summarize`) is too brittle. It fails if a company is private (where financial tools should be skipped) or if there's a ticker mismatch. By using LangGraph's ReAct model with conditional routing, I empowered the agent to dynamically decide its research path, check for data validity, handle ticker auto-resolution, and skip tools intelligently.
+* **The trade-off I accepted:** It introduced higher complexity in state management and debugging, along with a slight latency overhead per graph transition.
 
 ---
 
-### 4. Zod schema + `withStructuredOutput` for the final report
+### 2. I chose Groq (Llama-3.3-70b-versatile) as my LLM backbone
 
-**Why:** Without structured output enforcement, LLMs produce inconsistently formatted JSON that is hard to render reliably on the frontend. Zod validates the schema and the LLM is constrained to match it exactly.
-
-**Trade-off:** The schema is rigid. If the LLM cannot produce a value for a required field, the entire call fails. Nullable fields and `.default("")` are used to make the schema flexible enough.
-
----
-
-### 5. Stateless frontend chat (Groq API called from the browser)
-
-**Why:** Routing every chat message through the backend would require session storage, message persistence, and would add a full round-trip. The frontend Groq call keeps the chatbot snappy and backend-independent.
-
-**Trade-off:** The Groq API key is in the frontend `.env` (VITE_ prefix), which means it is visible in the built bundle. For production, all LLM calls should be proxied through the backend.
+* **Why I chose it:** Since this is an interactive research dashboard, users expect responses within seconds. Groq's dedicated LPU architecture provides incredibly fast token throughput for Llama-3.3-70b, making the multi-step research loop feel snappy and responsive.
+* **The trade-off I accepted:** Groq's free tier has strict rate limits. To handle this defensively, I implemented a custom error handler (`RateLimitError`) on the backend and added an automatic 15-second back-off retry mechanism (up to 2 retries) before raising a user-facing warning.
 
 ---
 
-### 6. Redis caching with TTL
+### 3. I chose Yahoo Finance for equity data retrieval
 
-**Why:** Every company analysis call invokes 3 Yahoo Finance API calls + 1 Tavily search + 2 Groq LLM calls. Caching the result for 10 minutes means repeated requests for the same company are served from Redis instantly.
-
-**Trade-off:** Stale data. Financial prices change by the minute, so cached reports older than 10 minutes might show outdated prices. A shorter TTL or real-time invalidation would be needed for live trading use cases.
+* **Why I chose it:** It is free, doesn't require API key registration, and provides comprehensive coverage of both Indian (NSE/BSE) and Global markets. The `yahoo-finance2` package let me structure and type the queries cleanly.
+* **The trade-off I accepted:** It lacks a formal SLA. Fetching data can sometimes fail or return nulls during off-market hours. I handled this by ensuring all schema fields are nullable and configuring the agent to handle missing data gracefully rather than throwing errors or hallucinating values.
 
 ---
 
-### What was left out
+### 4. I enforced a strict Zod schema with `withStructuredOutput` for reports
 
-| Feature | Reason |
-|---|---|
-| Real-time price streaming | Would require WebSockets + a financial data subscription |
-| Portfolio-level analysis | Out of scope; would need cross-company aggregation logic |
-| Historical chart overlays | Yahoo Finance has historical data but rendering it would require additional chart libraries |
-| Backend chat persistence | Each conversation is stateless; persistence would require a Chat table write on every message |
-| Email/notification alerts | Not part of the core research loop |
+* **Why I chose it:** If the backend received unstructured Markdown or loose JSON from the LLM, the React frontend would fail to render it consistently. Constraining the final step of the LangGraph to a Zod schema guarantees that the payload always conforms to the structure expected by the UI.
+* **The trade-off I accepted:** Rigid schemas can fail completely if the LLM cannot resolve a required field. I had to carefully configure defaults (like `.default("")`) and nullable types so the schema remains robust even when data is sparse.
+
+---
+
+### 5. I implemented a stateless frontend chatbot directly calling the Groq API
+
+* **Why I chose it:** Routing chatbot messages back to the server would require setting up session stores, tracking database history on every keystroke, and adding network latency. By calling Groq directly from the browser with the company's research report loaded in the system context, I achieved instant, server-independent chat responses.
+* **The trade-off I accepted:** The Groq API key is exposed in the client-side bundle. In a production-grade application, I would migrate this to a backend streaming route (`Server-Sent Events`) to keep the keys secure.
+
+---
+
+### 6. I integrated Redis caching with TTL on the backend API
+
+* **Why I chose it:** Since each analysis involves multiple Yahoo Finance calls, a Tavily news search, and Groq reasoning, running it repeatedly for the same company is slow and wastes API limits. I set up Redis to cache successful reports for 10 minutes and workspaces for 1 hour, giving users instant loads for repeated searches.
+* **The trade-off I accepted:** Data can become slightly stale during market hours. I resolved this by adding a "Re-analyze" button in the UI, which invalidates the Redis cache and forces a fresh agentic loop on demand.
+
+---
+
+### What I Left Out (And Why)
+
+* **Real-time stock price tickers:** I decided not to implement real-time streaming charts because it would require a paid WebSocket subscription (like Alpaca or Polygon.io). Instead, I focused on providing accurate snapshot market pricing.
+* **Portfolio performance aggregate calculations:** I focused the dashboard on deep individual company research rather than multi-stock portfolio aggregation to keep the agent focused on high-quality analysis.
+* **Persistent chat history:** Conversations with the company research cards are currently stateless and clear on page refresh. I chose to leave out persistence to keep the Postgres DB footprint light and the API fast.
+* **Advanced server-side PDF layouts:** The PDF generation runs a simple Puppeteer script. With more time, I would build customized HTML-to-PDF templates with rich typography and page-break rules.
+* **Email reports / Alerts:** I prioritized the real-time canvas interface over asynchronous email report deliveries to ensure a high-fidelity visual experience.
 
 ---
 
