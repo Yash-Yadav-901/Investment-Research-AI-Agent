@@ -1,7 +1,6 @@
-import asyncHandler from 'express-async-handler';
-
+import { asyncHandler } from "../utils/async_handler.js";
 const healthCheck = asyncHandler(async (req, res) => {
-  res.status(200).json({ status: 'ok' });
+    res.status(200).json({ status: 'ok' });
 });
 
-export default healthCheck;
+export { healthCheck };
