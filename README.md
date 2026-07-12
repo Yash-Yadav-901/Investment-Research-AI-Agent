@@ -7,13 +7,15 @@
 ## 📋 Table of Contents
 
 1. [Overview — What it does](#-overview--what-it-does)
-2. [Architecture — How it works](#-architecture--how-it-works)
-3. [Key Decisions & Trade-offs](#-key-decisions--trade-offs)
-4. [How to Run — Setup Guide](#-how-to-run--setup-guide)
-5. [Environment Variables](#-environment-variables)
-6. [API Reference](#-api-reference)
-7. [Example Runs](#-example-runs)
-8. [What I Would Improve with More Time](#-what-i-would-improve-with-more-time)
+2. [Features](#-features)
+3. [Steps to Use](#-steps-to-use)
+4. [Architecture — How it works](#-architecture--how-it-works)
+5. [Key Decisions & Trade-offs](#-key-decisions--trade-offs)
+6. [How to Run — Setup Guide](#-how-to-run--setup-guide)
+7. [Environment Variables](#-environment-variables)
+8. [API Reference](#-api-reference)
+9. [Example Runs](#-example-runs)
+10. [What I Would Improve with More Time](#-what-i-would-improve-with-more-time)
 
 ---
 
@@ -33,6 +35,181 @@ The **Investment Research AI Agent** is a full-stack web application that lets u
 | **Auth & Multi-tenancy** | Clerk provides OAuth + JWT authentication. Every resource is user-scoped |
 | **PDF Report Export** | Users can download a generated PDF investment report per company |
 | **Multi-market Support** | Handles Indian (NSE/BSE) and Global (US, EU, etc.) equities, and private companies intelligently |
+
+---
+
+## ✨ Features
+
+### 🤖 1. Autonomous AI Research Agent
+The core of the system is a **LangGraph ReAct agent** that reasons step-by-step before producing conclusions. It autonomously decides:
+- Whether a company is Indian, Global, or Private
+- Which Yahoo Finance ticker to resolve (handles fuzzy names like "Infosys", "HDFC", "Apple")
+- Whether to call financial tools (skips them for private companies)
+- When it has gathered enough data to stop and write the report
+
+No hardcoded pipeline — the agent adapts its research path per company.
+
+---
+
+### 📊 2. Structured Investment Reports
+Every analyzed company produces a **Zod-validated, typed JSON report** containing:
+
+| Field | Description |
+|---|---|
+| `verdict.decision` | `INVEST` or `PASS` |
+| `verdict.confidenceScore` | 0–100 confidence percentage |
+| `financialMetrics` | Price, P/E ratio, Market Cap, Debt/Equity, Revenue Growth, ROE, Profit Margins |
+| `keyCatalysts` | Bullish factors identified from data |
+| `investmentRisks` | Key downside risks |
+| `recentNews` | Last 5 news articles with URLs |
+| `decisionAnalysis` | Valuation, financial health, growth, news sentiment, risk breakdown |
+| `rationale` | Final concise reasoning paragraph |
+| `dataQuality` | Flags for missing data and limitations |
+
+---
+
+### 🗂 3. Workspace Organization
+Users can create multiple **Workspaces** to organize research:
+- Each workspace is an isolated project (e.g., "Indian IT Sector", "US Tech Watchlist")
+- Workspaces hold multiple company research cards
+- Each workspace is private to the authenticated user
+- Workspaces and their companies persist across sessions via PostgreSQL
+
+---
+
+### 🖱 4. Interactive React Flow Canvas
+Inside each workspace, companies are rendered as **draggable nodes** on an infinite canvas using React Flow:
+- The **Input Node** lets users type a company name and click Analyze
+- The **Company Dashboard Node** shows the full report with tabs for financials, news, risks, and chat
+- Nodes can be repositioned freely; positions are saved per company
+
+---
+
+### 💬 5. Context-Aware Chat Assistant
+Each company dashboard includes a **Groq-powered chatbot** that:
+- Is pre-loaded with the full company research report as system context
+- Answers questions like "What is the P/E ratio?", "Summarize the risks", "Should I invest?"
+- Maintains conversation history within the session (stateless — resets on page reload)
+- Uses Llama-3.3-70b-versatile for fast, accurate financial Q&A
+
+---
+
+### ⚡ 6. Redis API Caching
+All expensive operations are cached:
+- `companyInfo:{company_name}` — cached for 10 minutes (AI analysis results)
+- `workspaces:{userId}` — cached for 1 hour (workspace list)
+- `workspace:{id}` — cached for 1 hour (workspace detail with companies)
+- Cache is automatically invalidated on create/update/delete operations
+
+---
+
+### 🔐 7. Clerk Authentication & Multi-tenancy
+- Google OAuth + Email/Password sign-in via Clerk
+- JWT verified on every backend request via `clerkMiddleware()`
+- Every workspace and company is scoped to the authenticated user's Clerk ID
+- Unauthorized access returns 401/403 before any database query
+
+---
+
+### 📄 8. PDF Report Export
+- Users can download a PDF version of the investment report per company
+- PDF is generated server-side using Puppeteer
+- Download triggers via the Report button on the company dashboard
+
+---
+
+### 🌍 9. Multi-Market Support
+| Market Type | Handling |
+|---|---|
+| Indian (NSE) | Resolves to `.NS` suffix (e.g., `TCS.NS`, `HDFCBANK.NS`) |
+| Indian (BSE) | Falls back to `.BO` suffix |
+| Global (US/EU) | Uses standard Yahoo Finance ticker (e.g., `AAPL`, `TSLA`) |
+| Private Company | Detects privately held status; skips financial tools; reports limitations |
+
+---
+
+### 🔔 10. Toast Notification System
+- Real-time feedback for all operations (success, error, rate-limit warnings)
+- User-friendly messages — no raw status codes shown
+- Rate-limit errors display: *"Rate limit reached. Please wait a moment."*
+- Built with `react-hot-toast` with custom Neo-brutalist styling
+
+---
+
+## 📖 Steps to Use
+
+### Step 1 — Sign In
+1. Open the app at `http://localhost:5173` (or your deployed URL)
+2. Click **Sign In** on the landing page
+3. Choose Google OAuth or Email/Password
+4. You are redirected to the Home dashboard after authentication
+
+---
+
+### Step 2 — Create a Workspace
+1. Click **Workspaces** in the sidebar navigation
+2. Click the **folder icon** with the `+` badge
+3. Enter a workspace name (e.g., `Indian IT Sector`, `My Portfolio`)
+4. Click **Add Workspace**
+5. Your new workspace appears in the grid — click it to open
+
+---
+
+### Step 3 — Analyze a Company
+1. Inside the workspace, you see an **infinite canvas** with a small input card
+2. Type a company name or ticker in the text field:
+   - Indian examples: `TCS`, `Infosys`, `HDFC Bank`, `Reliance`
+   - Global examples: `Apple`, `AAPL`, `Tesla`, `NVIDIA`
+   - Private examples: `OpenAI`, `SpaceX` (agent handles gracefully)
+3. Click **Analyze**
+4. Wait ~10–20 seconds while the AI agent:
+   - Resolves the ticker
+   - Fetches live price + fundamentals from Yahoo Finance
+   - Fetches recent news from Tavily
+   - Generates and validates the structured report
+5. The **Company Dashboard card** appears on the canvas with the full report
+
+---
+
+### Step 4 — Explore the Report
+The Company Dashboard has multiple sections:
+
+| Tab / Section | What you see |
+|---|---|
+| **Header** | Company name, ticker, market type, live price, verdict badge |
+| **Verdict** | INVEST or PASS with confidence score |
+| **Financial Metrics** | P/E, Market Cap, Debt/Equity, Revenue Growth, ROE, Profit Margins |
+| **Key Catalysts** | Bullish investment factors from the research |
+| **Investment Risks** | Key risks and downside factors |
+| **Recent News** | Last 5 relevant news articles with links |
+| **Decision Analysis** | Detailed valuation, financial health, growth, and sentiment breakdown |
+| **Rationale** | Final investment reasoning paragraph |
+
+---
+
+### Step 5 — Chat with the AI about the Company
+1. The right panel on each Company Dashboard is the **Chat Assistant**
+2. Type any question about the company:
+   - *"What is the current P/E ratio and is it overvalued?"*
+   - *"Summarize the top 3 risks in simple terms"*
+   - *"Compare the revenue growth to the sector average"*
+   - *"Write a 3-sentence investment thesis for this company"*
+3. The assistant responds using only the report data — it does not hallucinate
+
+---
+
+### Step 6 — Download PDF Report
+1. Click the **Download Report** button on the Company Dashboard header
+2. A PDF is generated server-side and downloaded to your device
+3. The PDF contains the full structured research report
+
+---
+
+### Step 7 — Manage Your Research
+- **Delete a company** — hover over a company card in the workspace grid → click the red `✕` button
+- **Delete a workspace** — hover over the workspace folder in the grid → click the red `✕` button
+- **Re-analyze a company** — click the refresh/update button on the Company Dashboard to re-run the AI agent with fresh data
+- **Multiple workspaces** — you can have unlimited workspaces with unlimited companies
 
 ---
 
