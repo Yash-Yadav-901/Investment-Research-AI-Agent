@@ -23,7 +23,7 @@ const TopNavBar = ({ onMenuClick }) => {
 
     return (
         <header className="h-16 bg-[#fff6e6] border-b-[3px] border-black flex items-center justify-between px-6 shrink-0 z-30">
-            {/* Left Side: Dynamic Tab Structure */}
+            
             <div className="flex items-center gap-3">
                 <button
                     onClick={onMenuClick}
@@ -34,9 +34,8 @@ const TopNavBar = ({ onMenuClick }) => {
                     </svg>
                 </button>
                 
-                {/* Simulated Rounded Folder-Tab Header Element */}
                 <div className="bg-[#ffa51f] border-[3px] border-black px-4 py-1.5 rounded-2xl shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] flex flex-col justify-center relative overflow-hidden max-w-xs sm:max-w-md">
-                    {/* Visual Vector Light Reflection Accent Overlay */}
+                    
                     <div className="absolute top-0.5 left-2 right-2 h-[3px] bg-white/30 rounded-full" />
                     <h1 className="text-xs font-bold text-black uppercase tracking-wider leading-none select-none">
                         {pageInfo.title}
@@ -49,9 +48,8 @@ const TopNavBar = ({ onMenuClick }) => {
                 </div>
             </div>
 
-            {/* Right Side: Heavy Outline Search Box + User Badge */}
             <div className="flex items-center gap-4">
-                {/* Search Field Container */}
+                
                 <div className="relative hidden sm:flex items-center">
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -69,7 +67,6 @@ const TopNavBar = ({ onMenuClick }) => {
                     />
                 </div>
 
-                {/* User Info Capsule Badge */}
                 {user && (
                     <div className="flex items-center gap-2 bg-white border-[3px] border-black py-1 px-2.5 rounded-2xl shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[-1px] transition-transform">
                         <img

@@ -15,8 +15,8 @@ import SignInPage from './components/singinAndSignUp/SignIn.jsx'
 import SignUpPage from './components/singinAndSignUp/SignUp.jsx'
 import ContentList from './components/toolsAndOptions/ContentLits.jsx'
 import PageNotFound from './components/WrongPages/PageNotFound.jsx'
+import Home from './components/toolsAndOptions/Home.jsx'
 
-// Full Page Loading Animation Component matching Neo-brutalist Workspace aesthetics
 const FullPageLoader = ({ message }) => {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-[#FFFBEB] text-slate-950 font-sans p-6">
@@ -35,7 +35,6 @@ const FullPageLoader = ({ message }) => {
   );
 };
 
-// Guard with DB sync
 const ProtectedRoute = ({ children }) => {
   const { isSignedIn, isLoaded } = useAuth();
   const [isSynced, setIsSynced] = useState(false);
@@ -48,7 +47,7 @@ const ProtectedRoute = ({ children }) => {
           setIsSynced(true);
         } catch (error) {
           console.error("Failed to sync user with database:", error);
-          // Set to true anyway so the user is not permanently blocked if signup fails
+          
           setIsSynced(true);
         }
       };
@@ -62,20 +61,17 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
-
 const router = createBrowserRouter(
   createRoutesFromElements(
     <Route>
       <Route path="/sign-in/*" element={<SignInPage />} />
       <Route path="/sign-up/*" element={<SignUpPage />} />
 
-     
       <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-        <Route path="/home" element={<div className="p-6 text-white">Welcome Home!</div>} />
+        <Route path="/home" element={<Home />} />
         <Route path="/workspaces" element={<ContentList />} />
       </Route>
 
-     
       <Route element={<ProtectedRoute><WorkspaceLayout /></ProtectedRoute>}>
         <Route path="/workspace/:workspaceId" element={<MainWorkspace />} />
       </Route>

@@ -4,6 +4,7 @@ import { ApiError } from "../utils/api_error.js";
 import { PrismaClient } from "@prisma/client";
 import { getAuth } from '@clerk/express';
 import { researchAndAnalysis } from "../services/analysysAndResearch.js";
+import { redisClient } from "../../redis/index.js";
 
 const prisma = new PrismaClient();
 
@@ -20,7 +21,7 @@ const createCompanyInfo = asyncHandler(async (req, res) => {
     if (!workspaceId) {
         throw new ApiError(400, "Workspace ID is required");
     }
-
+    
     const workspaceExists = await prisma.workspace.findUnique({
         where: { id: parseInt(workspaceId) }
     });
@@ -31,6 +32,15 @@ const createCompanyInfo = asyncHandler(async (req, res) => {
 
     if (workspaceExists.ownerId !== userId) {
         throw new ApiError(403, "You do not have permission to add to this workspace");
+    }
+
+    const key = `companyInfo:${company_name}`
+
+    const redisData = await redisClient.get(key);
+    if (redisData) {
+        return res.status(200).json(
+            new ApiResponse(200, JSON.parse(redisData), "Company info fetched successfully")
+        );
     }
 
     try {
@@ -54,6 +64,15 @@ const createCompanyInfo = asyncHandler(async (req, res) => {
                 companyNodeData: companyNodeData || null
             }
         });
+
+        await redisClient.set(key, JSON.stringify(companyInfo), {EX: 60*10});
+
+        // Invalidate workspace cache
+        try {
+            await redisClient.del(`workspace:${parseInt(workspaceId)}`);
+        } catch (err) {
+            console.error("Redis deletion error:", err);
+        }
 
         return res.status(201).json(
             new ApiResponse(201, companyInfo, "Company info created successfully")
@@ -96,6 +115,13 @@ const updateCompanyInfo = asyncHandler(async (req, res) => {
             data: { rawData: analysisResult }
         });
 
+        // Invalidate workspace cache
+        try {
+            await redisClient.del(`workspace:${companyExists.workspaceId}`);
+        } catch (err) {
+            console.error("Redis deletion error:", err);
+        }
+
         return res.status(200).json(
             new ApiResponse(200, updatedCompanyInfo, "Company info updated successfully")
         );
@@ -131,6 +157,13 @@ const removeCompanyInfo = asyncHandler(async (req, res) => {
         await prisma.company.delete({
             where: { id: parseInt(companyId) }
         });
+
+        // Invalidate workspace cache
+        try {
+            await redisClient.del(`workspace:${companyExists.workspaceId}`);
+        } catch (err) {
+            console.error("Redis deletion error:", err);
+        }
 
         return res.status(200).json(
             new ApiResponse(200, null, "Company info removed successfully")

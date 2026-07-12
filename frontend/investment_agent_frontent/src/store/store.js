@@ -11,12 +11,10 @@ import {workspacesReducer} from "./workspaces";
 import { createMigrate } from "redux-persist";
 import {InsideWorkSpacesReducer} from "./InsideWorkSpaces";
 
-
 const rootReducer = combineReducers({
     workspaces: workspacesReducer,
     InsideWorkSpaces: InsideWorkSpacesReducer,
 });
-
 
 const migrations = {
     2: () => undefined,

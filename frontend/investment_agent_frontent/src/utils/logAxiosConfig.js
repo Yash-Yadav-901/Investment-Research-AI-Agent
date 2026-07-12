@@ -1,4 +1,4 @@
-// logsAxiosInstance.js - UPDATED
+
 import axios from 'axios';
 
 const logsAxiosInstance = axios.create({
@@ -7,7 +7,6 @@ const logsAxiosInstance = axios.create({
     withCredentials: true
 });
 
-// Function to get token from cookies
 function getTokenFromCookies() {
     const cookies = document.cookie.split(';');
     for (let cookie of cookies) {
@@ -22,12 +21,8 @@ function getTokenFromCookies() {
 logsAxiosInstance.interceptors.request.use(
     (config) => {
 
-
-        // Try multiple sources for token
         let token = localStorage.getItem("accessToken") ||
             getTokenFromCookies();
-
-
 
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;

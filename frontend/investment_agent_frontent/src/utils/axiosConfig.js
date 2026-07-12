@@ -2,14 +2,14 @@ import axios from 'axios';
 
 const axiosInstance = axios.create({
     baseURL: import.meta.env.VITE_API_BASE_URL,
-    timeout: 60000,   // increased for AI analysis calls which can take time
+    timeout: 60000,   
     withCredentials: true,
 });
 
 axiosInstance.interceptors.request.use(
     async (config) => {
         try {
-            // Get the Clerk session token (works outside React hooks)
+            
             const token = await window.Clerk?.session?.getToken();
             if (token) {
                 config.headers.Authorization = `Bearer ${token}`;

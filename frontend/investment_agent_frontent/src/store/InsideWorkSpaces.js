@@ -5,7 +5,6 @@ const initialState = {
     
 };
 
-
 const InsideWorkSpacesSlice = createSlice({
     name: "InsideWorkSpaces",
     initialState,
