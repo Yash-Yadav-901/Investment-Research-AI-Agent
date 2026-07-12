@@ -4,21 +4,40 @@
  * * @param {Object} company - The company data object retrieved from Prisma
  * @returns {String} Full HTML document string
  */
-function renderReportHTML(company) {
-  // 1. Safe parsing of nested / flat database schemas
-  const name = company.companyName || company.name || "Unknown Corporation";
-  const ticker = company.ticker || "N/A";
-  const marketType = company.marketType || "GLOBAL";
-  const summary = company.companySummary || company.summary || "No description available.";
+function renderReportHTML(rawDataInput) {
+  // 1. Safe parsing of nested / flat database schemas (like stringified Json or wrappers)
+  let data = rawDataInput;
+  if (typeof data === 'string') {
+    try {
+      data = JSON.parse(data);
+    } catch (e) {
+      console.error("Failed to parse report rawData input string:", e);
+    }
+  }
+
+  // Extract the inner report object if it exists
+  if (data && data.report) {
+    data = data.report;
+  }
+
+  // Fallback if data is still empty or null
+  if (!data) {
+    data = {};
+  }
+
+  const name = data.metadata?.companyName || data.companyName || data.name || "Unknown Corporation";
+  const ticker = data.metadata?.ticker || data.ticker || "N/A";
+  const marketType = data.metadata?.marketType || data.marketType || "GLOBAL";
+  const summary = data.metadata?.companySummary || data.companySummary || data.summary || "No description available.";
   
   // Extracting Verdict
-  const decision = company.verdict?.decision || company.decision || "PASS";
-  const confidenceScore = company.verdict?.confidenceScore || company.confidenceScore || 0;
-  const rationale = company.rationale || "No analyst rationale provided.";
-  const disclaimer = company.disclaimer || "This is an informational research report and not personalized financial advice.";
+  const decision = data.verdict?.decision || data.decision || "PASS";
+  const confidenceScore = data.verdict?.confidenceScore || data.confidenceScore || 0;
+  const rationale = data.rationale || "No analyst rationale provided.";
+  const disclaimer = data.disclaimer || "This is an informational research report and not personalized financial advice.";
 
   // Extracting Financial Metrics (supports nested payload or flat DB properties)
-  const metrics = company.financialMetrics || company;
+  const metrics = data.financialMetrics || data;
   const price = metrics.price || 0;
   const currency = metrics.currency || "USD";
   const peRatio = metrics.peRatio || null;
@@ -30,20 +49,20 @@ function renderReportHTML(company) {
   const earningsGrowth = metrics.earningsGrowth || null;
 
   // Extracting Lists with fallbacks
-  const keyCatalysts = Array.isArray(company.keyCatalysts) 
-    ? company.keyCatalysts 
-    : (company.keyCatalysts ? JSON.parse(company.keyCatalysts) : []);
+  const keyCatalysts = Array.isArray(data.keyCatalysts) 
+    ? data.keyCatalysts 
+    : (data.keyCatalysts ? JSON.parse(data.keyCatalysts) : []);
     
-  const investmentRisks = Array.isArray(company.investmentRisks) 
-    ? company.investmentRisks 
-    : (company.investmentRisks ? JSON.parse(company.investmentRisks) : []);
+  const investmentRisks = Array.isArray(data.investmentRisks) 
+    ? data.investmentRisks 
+    : (data.investmentRisks ? JSON.parse(data.investmentRisks) : []);
 
-  const recentNews = Array.isArray(company.recentNews) 
-    ? company.recentNews 
-    : (company.recentNews ? JSON.parse(company.recentNews) : []);
+  const recentNews = Array.isArray(data.recentNews) 
+    ? data.recentNews 
+    : (data.recentNews ? JSON.parse(data.recentNews) : []);
 
   // Extracting Decision Analysis block
-  const analysis = company.decisionAnalysis || {};
+  const analysis = data.decisionAnalysis || {};
   const valuationAssessment = analysis.valuationAssessment || "No assessment available.";
   const financialHealthAssessment = analysis.financialHealthAssessment || "No assessment available.";
   const growthAssessment = analysis.growthAssessment || "No assessment available.";

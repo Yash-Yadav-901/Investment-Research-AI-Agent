@@ -185,9 +185,9 @@ async function resolveTicker(ticker, market) {
                 continue;
             }
 
-           
+
             // INDIAN MARKET
-          
+
 
             if (market === "INDIAN") {
                 // 1. Exact NSE symbol
@@ -257,9 +257,9 @@ async function resolveTicker(ticker, market) {
                 }
             }
 
-           
+
             // GLOBAL MARKET
-          
+
 
             if (market === "GLOBAL") {
                 const equityResult = quotes.find(
@@ -468,9 +468,9 @@ const getFundamentalsTool = tool(
             const assetProfile =
                 summary?.assetProfile ?? {};
 
-           
+
             // FINANCIAL METRICS
-          
+
 
             const peRatio =
                 safeNumber(
@@ -899,22 +899,22 @@ const InvestmentReportSchema = z.object({
     }),
 
     // DETAILED EVIDENCE-BASED DECISION EXPLANATION
-   
+
 
     decisionAnalysis: z.object({
-        valuationAssessment: z.string(),
+        valuationAssessment: z.string().default(""),
 
         financialHealthAssessment:
-            z.string(),
+            z.string().default(""),
 
-        growthAssessment: z.string(),
+        growthAssessment: z.string().default(""),
 
         newsSentimentAssessment:
-            z.string(),
+            z.string().default(""),
 
-        riskAssessment: z.string(),
+        riskAssessment: z.string().default(""),
 
-        finalDecisionReason: z.string(),
+        finalDecisionReason: z.string().default(""),
 
         evidenceUsed: z.array(
             z.object({
@@ -924,7 +924,7 @@ const InvestmentReportSchema = z.object({
 
                 source: z.string(),
             })
-        ),
+        ).optional().default([]),
     }),
 
     rationale: z.string(),
@@ -948,38 +948,59 @@ MANDATORY RESEARCH PROCESS:
 
 1. Determine whether the company is INDIAN or GLOBAL.
 2. Correct obvious company-name or ticker spelling mistakes.
-3. Call get_live_market_price for current pricing.
-4. Call get_financial_fundamentals for company fundamentals.
-5. Call search_market_news for recent company-specific news, earnings, catalysts, and risks.
-6. After tool results are available, inspect them carefully.
-7. If a tool failed, do not invent missing data.
-8. Never fabricate:
+3. CRITICAL – PRIVATE COMPANY CHECK (do this before calling any financial tools):
+   - Reason about whether the requested company is PUBLICLY LISTED on a stock exchange.
+   - Well-known PRIVATE companies (no public ticker) include:
+     SpaceX, OpenAI, Anthropic, Stripe, Databricks, Epic Games, IKEA, Cargill, Koch Industries,
+     Bosch, Rolex, Mars, and other large firms known to be privately held.
+   - If the company is PRIVATE / NOT publicly traded:
+     a. Do NOT call get_live_market_price or get_financial_fundamentals.
+     b. DO call search_market_news to gather news about the company.
+     c. All financial metrics (price, peRatio, debtToEquity, marketCap, etc.) must be null.
+     d. companySummary must state: "[Company name] is a privately held company. No public financial data is available."
+     e. Set confidenceScore to 5–20 (financial assessment is impossible without public data).
+     f. Set decision to PASS.
+     g. Skip to structuring the report after news search.
+   - If the company IS publicly traded, continue to step 4.
+4. TICKER VERIFICATION: When you call a financial tool and receive results, check that the
+   returned company name actually matches the company the user asked for.
+   - If the tool returns data for a DIFFERENT company (e.g., user asked for SpaceX but tool
+     returned Virgin Galactic with ticker SPCE), that data is INVALID – discard it entirely.
+   - Set the metrics from that mismatched tool call to null.
+   - Record the mismatch in your reasoning so it can be flagged in the report.
+5. Call get_live_market_price for current pricing (public companies with verified ticker only).
+6. Call get_financial_fundamentals for company fundamentals (public companies with verified ticker only).
+7. Call search_market_news for recent news, earnings, catalysts, and risks.
+8. After tool results are available, inspect them carefully.
+9. If a tool failed, do not invent missing data.
+10. Never fabricate:
    - stock prices
    - P/E ratios
    - debt-to-equity values
    - financial metrics
    - news
    - URLs
-9. Treat null values as unavailable.
-10. For Indian companies always use market="INDIAN".
-11. For non-Indian companies use market="GLOBAL".
-12. Base the final assessment only on retrieved evidence.
-13. If data quality is weak, lower confidence.
-14. When evaluating evidence, distinguish:
+11. Treat null values as unavailable.
+12. For Indian companies always use market="INDIAN".
+13. For non-Indian companies use market="GLOBAL".
+14. Base the final assessment only on retrieved evidence.
+15. If data quality is weak, lower confidence.
+16. When evaluating evidence, distinguish:
    - valuation
    - financial health
    - growth
    - recent news
    - material risks
-15. Keep conclusions traceable to retrieved tool outputs.
-16. Do not create unsupported claims.
+17. Keep conclusions traceable to retrieved tool outputs.
+18. Do not create unsupported claims.
 
 IMPORTANT:
 
-You have not completed research until you have attempted all three categories:
-- live price
-- fundamentals
-- recent news
+You have not completed research until you have attempted all applicable steps:
+- Private company check (always)
+- live price (public + verified ticker only)
+- fundamentals (public + verified ticker only)
+- recent news (always)
 
 After all necessary tool calls and results are available, stop calling tools.
 `,
@@ -1040,6 +1061,28 @@ STRICT DATA RULES:
 
 8. If news is unavailable:
    - use an empty recentNews array.
+
+PRIVATE COMPANY RULES:
+
+P1. If the requested company is privately held and not publicly traded:
+   - Set ALL financial metrics to null: price, peRatio, debtToEquity, marketCap,
+     profitMargins, returnOnEquity, revenueGrowth, earningsGrowth.
+   - Set ticker to "PRIVATE" in metadata.
+   - companySummary must contain: "[Company] is a privately held company. No public financial data is available."
+   - Add "Company is privately held — no public financial data available." to dataQuality.limitations.
+   - Set priceAvailable to false, fundamentalsAvailable to false.
+   - Set confidenceScore between 5 and 20.
+   - Set decision to "PASS".
+
+TICKER MISMATCH RULES:
+
+M1. If the conversation shows the agent detected a ticker mismatch (tool returned a different company):
+   - Discard those financial metrics — set all of them to null.
+   - Add "Ticker mismatch: financial tool returned data for a different company. Metrics discarded."
+     to dataQuality.limitations.
+   - Set priceAvailable and fundamentalsAvailable to false.
+   - Set confidenceScore no higher than 20.
+   - Set decision to "PASS".
 
 9. Include:
    - tool failures
@@ -1243,8 +1286,8 @@ const app = workflow.compile();
 
 
 
- async function researchAndAnalysis({companyName }) {
-    
+async function researchAndAnalysis({ companyName }) {
+
     if (
         !companyName ||
         typeof companyName !== "string" ||
@@ -1255,13 +1298,17 @@ const app = workflow.compile();
         );
     }
 
-    try {
-        const finalState = await app.invoke(
-            {
-                messages: [
-                    {
-                        role: "user",
-                        content: `
+    const MAX_RETRIES = 2;
+    const RETRY_DELAY_MS = 15000; // 15 seconds — enough for Groq TPM window to reset
+
+    for (let attempt = 1; attempt <= MAX_RETRIES + 1; attempt++) {
+        try {
+            const finalState = await app.invoke(
+                {
+                    messages: [
+                        {
+                            role: "user",
+                            content: `
 Research this company as an investment candidate.
 
 Company:
@@ -1278,42 +1325,52 @@ Generate a complete investment report.
 
 Never fabricate unavailable information.
 `,
-                    },
-                ],
-            },
-            {
-                recursionLimit: 25,
-            }
-        );
-
-        const lastMessage =
-            finalState.messages[
-            finalState.messages.length - 1
-            ];
-
-        if (!lastMessage?.content) {
-            throw new Error(
-                "Agent returned an empty response."
+                        },
+                    ],
+                },
+                {
+                    recursionLimit: 25,
+                }
             );
-        }
 
-        const report = JSON.parse(
-            lastMessage.content
-        );
+            const lastMessage =
+                finalState.messages[
+                finalState.messages.length - 1
+                ];
 
-        return {
-            success: true,
-            generatedAt:
-                new Date().toISOString(),
-            report,
-        };
-    } catch (error) {
-        const message = explainModelError(error);
-        if (/rate limit|quota|too many requests/i.test(message)) {
-            throw new RateLimitError(message);
+            if (!lastMessage?.content) {
+                throw new Error(
+                    "Agent returned an empty response."
+                );
+            }
+
+            const report = JSON.parse(
+                lastMessage.content
+            );
+
+            return {
+                success: true,
+                generatedAt:
+                    new Date().toISOString(),
+                report,
+            };
+        } catch (error) {
+            const message = explainModelError(error);
+            const isRateLimit = /rate limit|quota|too many requests/i.test(message);
+
+            if (isRateLimit && attempt <= MAX_RETRIES) {
+                console.warn(`⚠️ Rate limit hit (attempt ${attempt}/${MAX_RETRIES + 1}). Retrying in ${RETRY_DELAY_MS / 1000}s...`);
+                await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+                continue;
+            }
+
+            if (isRateLimit) {
+                throw new RateLimitError(message);
+            }
+
+            throw new Error(message);
         }
-        throw new Error(message);
     }
 }
 
-export {researchAndAnalysis};
+export { researchAndAnalysis };

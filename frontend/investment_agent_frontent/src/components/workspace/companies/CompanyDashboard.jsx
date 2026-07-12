@@ -44,11 +44,13 @@ export default function CompanyDashboard({ data }) {
             console.error("Failed to parse company data payload:", e);
         }
     }
-    
+
     // Extract the inner report object if it exists structural wise
     if (payload && payload.report) {
         payload = payload.report;
     }
+
+    const [isDownloading, setIsDownloading] = useState(false);
 
     const handleDeleteCompany = async () => {
         const companyId = data?.id;
@@ -70,10 +72,39 @@ export default function CompanyDashboard({ data }) {
         }
     };
 
+    const handleDownloadReport = async () => {
+        const companyId = data?.id;
+        if (!companyId) {
+            console.error("No company ID found to download report");
+            return;
+        }
+
+        setIsDownloading(true);
+        try {
+            const response = await axiosInstance.get(`/api/v1/report/${companyId}`, {
+                responseType: 'blob'
+            });
+
+            const blob = new Blob([response.data], { type: 'application/pdf' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `${payload.metadata?.companyName || 'Company'}-report.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("Failed to download PDF report:", error);
+        } finally {
+            setIsDownloading(false);
+        }
+    };
+
     const [chatMessages, setChatMessages] = useState([
         {
             sender: 'assistant',
-            text: `Hello! I am your AI Financial Assistant. I have fully indexed NVIDIA's latest deep analytical report. Ask me anything about NVDA's financial metrics, catalysts, risks, or the analyst verdict!`
+            text: `Hello! I am your AI Financial Assistant. I have fully indexed this company's latest deep analytical report. Ask me anything about  financial metrics, catalysts, risks, or the analyst verdict!`
         }
     ]);
 
@@ -91,9 +122,9 @@ export default function CompanyDashboard({ data }) {
         );
     }
 
-    
+
     const callGemini = async (userPrompt, currentHistory) => {
-        const apiKey = import.meta.env.VITE_GOOGLE_API_KEY; 
+        const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
         const systemPrompt = `You are a professional financial analyst AI assistant. You have access to this real-time Deep Report Dashboard payload for NVIDIA Corporation (NVDA):
 ${JSON.stringify(payload, null, 2)}
 
@@ -187,7 +218,7 @@ Provide analytical, helpful, and concise answers based strictly on the provided 
     return (
         <div className="min-h-screen bg-zinc-950 text-zinc-300 font-sans flex flex-col items-center justify-start p-4 md:p-8 relative">
             <Handle type="target" position={Position.Left} id="b" />
-            
+
             <div className="relative w-full max-w-7xl bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl flex flex-col overflow-hidden group">
                 {/* Header Block */}
                 <header className="px-6 py-5 border-b border-zinc-800 bg-zinc-900/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -211,6 +242,23 @@ Provide analytical, helpful, and concise answers based strictly on the provided 
                             {payload.metadata?.marketType} Market
                         </span>
                         <button
+                            onClick={handleDownloadReport}
+                            disabled={isDownloading}
+                            title="Download PDF Report"
+                            className="p-1.5 text-zinc-500 hover:text-emerald-400 disabled:opacity-50 disabled:hover:text-zinc-500 bg-zinc-800/50 hover:bg-zinc-800 rounded-md border border-zinc-800 hover:border-emerald-900/30 transition-all duration-200 flex items-center justify-center"
+                        >
+                            {isDownloading ? (
+                                <svg className="animate-spin h-5 w-5 text-emerald-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            ) : (
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                                </svg>
+                            )}
+                        </button>
+                        <button
                             onClick={handleDeleteCompany}
                             title="Delete Company"
                             className="p-1.5 text-zinc-500 hover:text-rose-400 bg-zinc-800/50 hover:bg-zinc-800 rounded-md border border-zinc-800 hover:border-rose-900/30 transition-all duration-200"
@@ -224,10 +272,10 @@ Provide analytical, helpful, and concise answers based strictly on the provided 
 
                 {/* Workspace Layout Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-zinc-800">
-                    
+
                     {/* LEFT & MID COLUMNS */}
                     <main className="lg:col-span-2 flex flex-col divide-y divide-zinc-800 bg-zinc-950/20 overflow-y-auto max-h-[800px] scrollbar-thin">
-                        
+
                         <section className="p-6 grid grid-cols-1 md:grid-cols-12 gap-6 bg-zinc-900/30">
                             {/* Verdict Indicator */}
                             <div className="md:col-span-4 bg-zinc-900 border border-zinc-800/80 rounded-xl p-5 flex flex-col justify-between items-center text-center relative overflow-hidden">
@@ -492,7 +540,6 @@ Provide analytical, helpful, and concise answers based strictly on the provided 
                                 <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wider font-mono">
                                     Interactive AI Assistant
                                 </h3>
-                                <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded font-mono px-1.5 py-0.5 uppercase tracking-widest font-bold">GEMINI AI</span>
                             </div>
 
                             <div className="flex-1 bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 overflow-y-auto space-y-4 mb-3 scrollbar-thin flex flex-col">
@@ -502,7 +549,7 @@ Provide analytical, helpful, and concise answers based strictly on the provided 
                                         className={`max-w-[85%] rounded-xl p-3 text-xs leading-relaxed ${msg.sender === 'user'
                                             ? 'bg-zinc-800 text-zinc-100 self-end rounded-br-none border border-zinc-700/50'
                                             : 'bg-zinc-900 text-zinc-300 self-start rounded-bl-none border border-zinc-800'
-                                        }`}
+                                            }`}
                                     >
                                         {msg.text}
                                     </div>
