@@ -374,6 +374,38 @@ In building this system, I made several critical design choices to balance accur
 
 ---
 
+## 🔍 Ambiguity Resolution & Technical Decisions
+
+When faced with ambiguous requirements, the following choices and engineering trade-offs were made to ensure robust service reliability:
+
+### 1. Market Selection & Ticker Resolution
+* **Ambiguity:** How to resolve tickers when the user only types a generic company name (e.g., "TCS") without choosing a market (Indian vs. Global).
+* **Our Call:** The LangGraph ReAct agent autonomously classifies the target company's primary market based on internal pre-trained weights.
+  * For **Indian companies**, it queries with the search string and resolves to the `.NS` (NSE) suffix first (for liquidity), falling back to `.BO` (BSE) if needed.
+  * For **Global companies**, it queries Yahoo Finance search to locate the primary equity exchange and resolved symbol (e.g. `AAPL` for Apple).
+
+### 2. Private Company Edge Cases
+* **Ambiguity:** How should the agent behave when asked to analyze a prominent private company (like SpaceX or OpenAI) that does not list on public stock markets?
+* **Our Call:**
+  * If the agent recognizes the company is private, it immediately returns a `PASS` verdict, restricts `confidenceScore` to `5-20%`, and sets all financial metrics to `null`.
+  * It bypasses fundamental equity queries (avoiding false errors) and routes directly to Tavily web search to obtain news and qualitative risks/catalysts.
+  * It returns ticker value `"PRIVATE"` in the metadata.
+
+### 3. Ticker Mismatch Handling
+* **Ambiguity:** Yahoo Finance search might return a completely unrelated ticker if a private company name matches a public company's acronym (e.g., searching "SpaceX" returning "Virgin Galactic" under ticker `SPCE`).
+* **Our Call:** The agent performs a secondary semantic validation check after retrieving data. If it detects a mismatch:
+  * It discards the mismatched financial data (setting them to `null` to avoid displaying false information).
+  * It flags the mismatch under the report's `dataQuality.limitations` block.
+  * It forces a `PASS` verdict and restricts the `confidenceScore` to a maximum of `20%`.
+
+### 4. Chat History Lifecycle
+* **Ambiguity:** Should client chatbot messages persist in Postgres across browser refreshes?
+* **Our Call:** To prevent query latencies and reduce database footprint, the dashboard's Q&A chat is stateless. The entire company research payload is injected dynamically into the LLM system context, ensuring accurate answers without overhead database writes.
+
+
+
+---
+
 ## 🚀 How to Run — Setup Guide
 
 ### Prerequisites
