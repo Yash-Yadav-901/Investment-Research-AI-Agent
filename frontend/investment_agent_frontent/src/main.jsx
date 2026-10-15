@@ -68,8 +68,14 @@ const router = createBrowserRouter(
       <Route path="/sign-in/*" element={<SignInPage />} />
       <Route path="/sign-up/*" element={<SignUpPage />} />
 
-      <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+      {/* Public home page - accessible without login */}
+      <Route element={<AppLayout />}>
+        <Route path="/" element={<Home />} />
         <Route path="/home" element={<Home />} />
+      </Route>
+
+      {/* Protected routes - require login */}
+      <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
         <Route path="/workspaces" element={<ContentList />} />
       </Route>
 
@@ -77,7 +83,6 @@ const router = createBrowserRouter(
         <Route path="/workspace/:workspaceId" element={<MainWorkspace />} />
       </Route>
 
-      <Route path="/" element={<Navigate to="/sign-in" replace />} />
       <Route path="*" element={<PageNotFound />} />
     </Route>
   )

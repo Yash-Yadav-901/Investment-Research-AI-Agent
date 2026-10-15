@@ -1,11 +1,13 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { useClerk, useUser } from '@clerk/react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { useClerk, useUser, useAuth } from '@clerk/react';
 import { AiOutlineHome } from "react-icons/ai";
 
 const SideBar = ({ isOpen, onClose }) => {
     const { signOut } = useClerk();
     const { user } = useUser();
+    const { isSignedIn } = useAuth();
+    const navigate = useNavigate();
 
     const navLinks = [
         {
@@ -84,29 +86,43 @@ const SideBar = ({ isOpen, onClose }) => {
                 </nav>
 
                 <div className="px-4 py-5 border-t-4 border-[#0F172A] bg-[#FEF3C7] space-y-4">
-                    {user && (
-                        <div className="flex items-center gap-3 px-3 py-2 bg-white border-2 border-[#0F172A] rounded-xl shadow-[3px_3px_0px_0px_#0F172A]">
-                            <img
-                                src={user.imageUrl}
-                                alt="avatar"
-                                className="w-10 h-10 rounded-full object-cover border-2 border-[#0F172A]"
-                            />
-                            <div className="flex-1 min-w-0">
-                                <p className="text-xs font-black text-[#0F172A] truncate">{user.fullName}</p>
-                                <p className="text-[10px] font-bold text-slate-500 truncate">{user.primaryEmailAddress?.emailAddress}</p>
-                            </div>
-                        </div>
+                    {isSignedIn ? (
+                        <>
+                            {user && (
+                                <div className="flex items-center gap-3 px-3 py-2 bg-white border-2 border-[#0F172A] rounded-xl shadow-[3px_3px_0px_0px_#0F172A]">
+                                    <img
+                                        src={user.imageUrl}
+                                        alt="avatar"
+                                        className="w-10 h-10 rounded-full object-cover border-2 border-[#0F172A]"
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-xs font-black text-[#0F172A] truncate">{user.fullName}</p>
+                                        <p className="text-[10px] font-bold text-slate-500 truncate">{user.primaryEmailAddress?.emailAddress}</p>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            <button
+                                onClick={() => signOut({ redirectUrl: '/' })}
+                                className="flex items-center justify-center gap-3 w-full px-4 py-3 bg-[#EF4444] text-white border-2 border-[#0F172A] rounded-xl text-sm font-bold shadow-[3px_3px_0px_0px_#0F172A] hover:bg-[#DC2626] hover:-translate-y-[2px] active:translate-y-0 active:shadow-none transition-all duration-100"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
+                                </svg>
+                                Logout
+                            </button>
+                        </>
+                    ) : (
+                        <button
+                            onClick={() => { onClose(); navigate('/sign-in'); }}
+                            className="flex items-center justify-center gap-3 w-full px-4 py-3 bg-[#3B82F6] text-white border-2 border-[#0F172A] rounded-xl text-sm font-bold shadow-[3px_3px_0px_0px_#0F172A] hover:bg-[#2563EB] hover:-translate-y-[2px] active:translate-y-0 active:shadow-none transition-all duration-100"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
+                            </svg>
+                            Sign In
+                        </button>
                     )}
-                    
-                    <button
-                        onClick={() => signOut({ redirectUrl: '/sign-in' })}
-                        className="flex items-center justify-center gap-3 w-full px-4 py-3 bg-[#EF4444] text-white border-2 border-[#0F172A] rounded-xl text-sm font-bold shadow-[3px_3px_0px_0px_#0F172A] hover:bg-[#DC2626] hover:-translate-y-[2px] active:translate-y-0 active:shadow-none transition-all duration-100"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
-                        </svg>
-                        Logout
-                    </button>
                 </div>
             </div>
         </>

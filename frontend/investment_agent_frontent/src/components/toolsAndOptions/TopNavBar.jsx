@@ -1,16 +1,18 @@
 import React from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useUser } from '@clerk/react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setSearchQuery } from '../../store/workspaces.js';
 
 const pageTitles = {
-    '/home': { title: 'Home', subtitle: 'Welcome back to your dashboard' },
+    '/': { title: 'Home', subtitle: 'Investment Research AI Agent' },
+    '/home': { title: 'Home', subtitle: 'Investment Research AI Agent' },
     '/workspaces': { title: 'Workspaces', subtitle: 'Manage and browse your workspaces' },
 };
 
 const TopNavBar = ({ onMenuClick }) => {
     const location = useLocation();
+    const navigate = useNavigate();
     const { user } = useUser();
     const dispatch = useDispatch();
     const searchQuery = useSelector((state) => state.workspaces.searchQuery || "");
@@ -67,7 +69,7 @@ const TopNavBar = ({ onMenuClick }) => {
                     />
                 </div>
 
-                {user && (
+                {user ? (
                     <div className="flex items-center gap-2 bg-white border-[3px] border-black py-1 px-2.5 rounded-2xl shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[-1px] transition-transform">
                         <img
                             src={user.imageUrl}
@@ -78,6 +80,13 @@ const TopNavBar = ({ onMenuClick }) => {
                             {user.firstName ? user.firstName.toUpperCase() : 'USER'}
                         </span>
                     </div>
+                ) : (
+                    <button
+                        onClick={() => navigate('/sign-in')}
+                        className="bg-[#22C55E] hover:bg-[#16a34a] text-[#0F172A] font-black text-xs uppercase px-4 py-2 border-[2.5px] border-black rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all cursor-pointer"
+                    >
+                        Sign In
+                    </button>
                 )}
             </div>
         </header>
