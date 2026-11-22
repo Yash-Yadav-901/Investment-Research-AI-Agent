@@ -1,6 +1,13 @@
 import { ApiError } from "../utils/api_error.js";
 
 const errorHandler = (err, req, res, next) => {
+    console.error(`❌ [ERROR] ${req.method} ${req.originalUrl}:`, {
+        message: err.message,
+        statusCode: err.statusCode || 500,
+        errors: err.errors || [],
+        stack: err.stack || ""
+    });
+
     let error= err;
 
     if(!(error instanceof ApiError)){

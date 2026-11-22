@@ -33,6 +33,17 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(express.static('public'));
 
+// HTTP Request Logger for debugging
+app.use((req, res, next) => {
+    const start = Date.now();
+    console.log(`➡️ [REQ] ${req.method} ${req.originalUrl}`);
+    res.on("finish", () => {
+        const duration = Date.now() - start;
+        console.log(`⬅️ [RES] ${req.method} ${req.originalUrl} - Status: ${res.statusCode} (${duration}ms)`);
+    });
+    next();
+});
+
 import userRouter from "./routes/user.route.js";
 import workspaceRouter from "./routes/workspace.route.js";
 import companyInfoRouter from "./routes/company.route.js";

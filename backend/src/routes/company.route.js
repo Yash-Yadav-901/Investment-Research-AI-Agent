@@ -1,8 +1,9 @@
-import { createCompanyInfo, updateCompanyInfo, removeCompanyInfo } from "../controllers/company_info.contoroller.js";
+import { createCompanyInfo, updateCompanyInfo, removeCompanyInfo, resolveCompanyHandler } from "../controllers/company_info.contoroller.js";
 import { Router } from "express";
 
 const companyInfoRouter = Router();
 
+companyInfoRouter.route("/resolve").post(resolveCompanyHandler);
 companyInfoRouter.route("/create").post(createCompanyInfo);
 companyInfoRouter.route("/update/:companyId").put(updateCompanyInfo);
 companyInfoRouter.route("/remove/:companyId").delete(removeCompanyInfo);

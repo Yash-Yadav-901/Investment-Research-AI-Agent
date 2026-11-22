@@ -1,3 +1,13 @@
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 /**
  * Generates a clean, print-optimized HTML string suitable for PDF conversion engines (like Puppeteer).
  * Handles flat DB models or nested JSON structures gracefully.
@@ -25,21 +35,21 @@ function renderReportHTML(rawDataInput) {
     data = {};
   }
 
-  const name = data.metadata?.companyName || data.companyName || data.name || "Unknown Corporation";
-  const ticker = data.metadata?.ticker || data.ticker || "N/A";
-  const marketType = data.metadata?.marketType || data.marketType || "GLOBAL";
-  const summary = data.metadata?.companySummary || data.companySummary || data.summary || "No description available.";
+  const name = escapeHtml(data.metadata?.companyName || data.companyName || data.name || "Unknown Corporation");
+  const ticker = escapeHtml(data.metadata?.ticker || data.ticker || "N/A");
+  const marketType = escapeHtml(data.metadata?.marketType || data.marketType || "GLOBAL");
+  const summary = escapeHtml(data.metadata?.companySummary || data.companySummary || data.summary || "No description available.");
   
   // Extracting Verdict
-  const decision = data.verdict?.decision || data.decision || "PASS";
+  const decision = escapeHtml(data.verdict?.decision || data.decision || "PASS");
   const confidenceScore = data.verdict?.confidenceScore || data.confidenceScore || 0;
-  const rationale = data.rationale || "No analyst rationale provided.";
-  const disclaimer = data.disclaimer || "This is an informational research report and not personalized financial advice.";
+  const rationale = escapeHtml(data.rationale || "No analyst rationale provided.");
+  const disclaimer = escapeHtml(data.disclaimer || "This is an informational research report and not personalized financial advice.");
 
   // Extracting Financial Metrics (supports nested payload or flat DB properties)
   const metrics = data.financialMetrics || data;
   const price = metrics.price || 0;
-  const currency = metrics.currency || "USD";
+  const currency = escapeHtml(metrics.currency || "USD");
   const peRatio = metrics.peRatio || null;
   const debtToEquity = metrics.debtToEquity || null;
   const marketCap = metrics.marketCap || 0;
@@ -48,27 +58,39 @@ function renderReportHTML(rawDataInput) {
   const revenueGrowth = metrics.revenueGrowth || null;
   const earningsGrowth = metrics.earningsGrowth || null;
 
-  // Extracting Lists with fallbacks
-  const keyCatalysts = Array.isArray(data.keyCatalysts) 
+  // Extracting Lists with fallbacks and HTML escaping
+  const rawCatalysts = Array.isArray(data.keyCatalysts) 
     ? data.keyCatalysts 
     : (data.keyCatalysts ? JSON.parse(data.keyCatalysts) : []);
+  const keyCatalysts = rawCatalysts.map(escapeHtml);
     
-  const investmentRisks = Array.isArray(data.investmentRisks) 
+  const rawRisks = Array.isArray(data.investmentRisks) 
     ? data.investmentRisks 
     : (data.investmentRisks ? JSON.parse(data.investmentRisks) : []);
+  const investmentRisks = rawRisks.map(escapeHtml);
 
-  const recentNews = Array.isArray(data.recentNews) 
+  const rawNews = Array.isArray(data.recentNews) 
     ? data.recentNews 
     : (data.recentNews ? JSON.parse(data.recentNews) : []);
+  const recentNews = rawNews.map(item => ({
+    headline: escapeHtml(item.headline),
+    summary: escapeHtml(item.summary),
+    url: escapeHtml(item.url),
+  }));
 
-  // Extracting Decision Analysis block
+  // Extracting Decision Analysis block with HTML escaping
   const analysis = data.decisionAnalysis || {};
-  const valuationAssessment = analysis.valuationAssessment || "No assessment available.";
-  const financialHealthAssessment = analysis.financialHealthAssessment || "No assessment available.";
-  const growthAssessment = analysis.growthAssessment || "No assessment available.";
-  const newsSentimentAssessment = analysis.newsSentimentAssessment || "No assessment available.";
-  const finalDecisionReason = analysis.finalDecisionReason || "No decision logic specified.";
-  const evidenceUsed = Array.isArray(analysis.evidenceUsed) ? analysis.evidenceUsed : [];
+  const valuationAssessment = escapeHtml(analysis.valuationAssessment || "No assessment available.");
+  const financialHealthAssessment = escapeHtml(analysis.financialHealthAssessment || "No assessment available.");
+  const growthAssessment = escapeHtml(analysis.growthAssessment || "No assessment available.");
+  const newsSentimentAssessment = escapeHtml(analysis.newsSentimentAssessment || "No assessment available.");
+  const finalDecisionReason = escapeHtml(analysis.finalDecisionReason || "No decision logic specified.");
+  const rawEvidence = Array.isArray(analysis.evidenceUsed) ? analysis.evidenceUsed : [];
+  const evidenceUsed = rawEvidence.map(item => ({
+    claim: escapeHtml(item.claim),
+    evidence: escapeHtml(item.evidence),
+    source: escapeHtml(item.source),
+  }));
 
   // Helper formatting functions for HTML insertion
   const formatCurrency = (val) => {

@@ -8,8 +8,10 @@ const prisma = new PrismaClient();
 
 const signup = asyncHandler(async (req, res) => {
     const auth = getAuth(req);
+    console.log(`[User] signup initiated with userId:`, auth?.userId);
 
     if (!auth?.userId) {
+        console.warn(`[User] signup failed: Unauthorized (no userId in request)`);
         throw new ApiError(401, "Unauthorized");
     }
 
@@ -17,6 +19,7 @@ const signup = asyncHandler(async (req, res) => {
         // Fetch email from Clerk since getAuth() doesn't include it
         const clerkUser = await clerkClient.users.getUser(auth.userId);
         const email = clerkUser.emailAddresses[0]?.emailAddress;
+        console.log(`[User] Fetched Clerk email:`, email, `for userId:`, auth.userId);
 
         // Upsert: if user already exists (e.g. logged in before) return them, else create
         const user = await prisma.user.upsert({
@@ -28,6 +31,7 @@ const signup = asyncHandler(async (req, res) => {
             }
         });
 
+        console.log(`[User] User upserted successfully in database:`, user.id);
         return res.status(201).json(
             new ApiResponse(201, user, "User created successfully")
         );
@@ -40,8 +44,10 @@ const signup = asyncHandler(async (req, res) => {
 
 const get_profile = asyncHandler(async (req, res) => {
     const auth = getAuth(req);
+    console.log(`[User] get_profile initiated with userId:`, auth?.userId);
 
     if (!auth?.userId) {
+        console.warn(`[User] get_profile failed: Unauthorized`);
         throw new ApiError(401, "Unauthorized");
     }
 
@@ -53,9 +59,11 @@ const get_profile = asyncHandler(async (req, res) => {
         });
 
         if (!user) {
+            console.warn(`[User] User not found in DB for id:`, auth.userId);
             throw new ApiError(404, "User not found");
         }
 
+        console.log(`[User] User profile fetched successfully:`, user.id);
         return res.status(200).json(
             new ApiResponse(200, user, "User profile fetched successfully")
         );

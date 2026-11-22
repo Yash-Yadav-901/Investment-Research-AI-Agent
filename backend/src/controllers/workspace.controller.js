@@ -13,6 +13,7 @@ const createWorkspace = asyncHandler(async (req, res) => {
     const auth = getAuth(req);
     const userId = auth.userId;
 
+    console.log("[Workspace] createWorkspace request:", { name, userId });
 
     if (!name) {
         throw new ApiError(400, "Workspace name is required");
@@ -21,8 +22,7 @@ const createWorkspace = asyncHandler(async (req, res) => {
     if (!userId) {
         throw new ApiError(401, "Unauthorized");
     }
-    console.log("name", name);
-    console.log("userId", userId);
+
     try {
         const workspace = await prisma.workspace.create({
             data: {
@@ -30,10 +30,12 @@ const createWorkspace = asyncHandler(async (req, res) => {
                 ownerId: userId,
             },
         });
+        console.log(`[Workspace] Created workspace id ${workspace.id} for user ${userId}`);
 
         // Invalidate workspaces cache for this user
         try {
             await redisClient.del(`workspaces:${userId}`);
+            console.log(`[Workspace] Cache invalidated for workspaces:${userId}`);
         } catch (err) {
             console.error("Redis deletion error:", err);
         }
@@ -50,6 +52,8 @@ const getWorkspaces = asyncHandler(async (req, res) => {
     const auth = getAuth(req);
     const userId = auth.userId; 
 
+    console.log("[Workspace] getWorkspaces request for user:", userId);
+
     if (!userId) {
         throw new ApiError(401, "Unauthorized");
     }
@@ -58,8 +62,10 @@ const getWorkspaces = asyncHandler(async (req, res) => {
     try {
         const cachedWorkspaces = await redisClient.get(cacheKey);
         if (cachedWorkspaces) {
+            console.log(`[Workspace] Cache HIT for ${cacheKey}`);
             return res.status(200).json(new ApiResponse(200, JSON.parse(cachedWorkspaces), "Workspaces fetched successfully from cache"));
         }
+        console.log(`[Workspace] Cache MISS for ${cacheKey}`);
     } catch (err) {
         console.error("Redis read error:", err);
     }
@@ -70,9 +76,11 @@ const getWorkspaces = asyncHandler(async (req, res) => {
                 ownerId: userId,
             },
         });
+        console.log(`[Workspace] Retrieved ${workspaces.length} workspaces from DB for user ${userId}`);
 
         try {
             await redisClient.set(cacheKey, JSON.stringify(workspaces), { EX: 3600 });
+            console.log(`[Workspace] Cached workspaces at ${cacheKey} (TTL 3600s)`);
         } catch (err) {
             console.error("Redis write error:", err);
         }
@@ -90,6 +98,8 @@ const updateWorkspaceName = asyncHandler(async (req, res) => {
     const userId = auth.userId;
     const parsedId = parseInt(workspaceId);
 
+    console.log("[Workspace] updateWorkspaceName request:", { workspaceId, newName, userId });
+
     if (!workspaceId || !newName) {
         throw new ApiError(400, "Workspace ID and new name are required");
     }
@@ -106,9 +116,11 @@ const updateWorkspaceName = asyncHandler(async (req, res) => {
         });
 
         if (!workspace) {
+            console.warn(`[Workspace] Workspace not found for id ${parsedId}`);
             throw new ApiError(404, "Workspace not found");
         }
         if (workspace.ownerId !== userId) {
+            console.warn(`[Workspace] Unauthorized update attempt for workspace ${parsedId} by user ${userId}`);
             throw new ApiError(403, "You do not have permission to update this workspace");
         }
 
@@ -116,11 +128,13 @@ const updateWorkspaceName = asyncHandler(async (req, res) => {
             where: { id: parsedId },
             data: { name: newName },
         });
+        console.log(`[Workspace] Updated workspace ${parsedId} name to "${newName}"`);
 
         // Invalidate workspaces list and workspace detail caches
         try {
             await redisClient.del(`workspaces:${userId}`);
             await redisClient.del(`workspace:${parsedId}`);
+            console.log(`[Workspace] Cache invalidated for workspaces:${userId} and workspace:${parsedId}`);
         } catch (err) {
             console.error("Redis deletion error:", err);
         }
@@ -137,6 +151,8 @@ const deleteWorkspace = asyncHandler(async (req, res) => {
     const auth = getAuth(req);
     const userId = auth.userId;
 
+    console.log("[Workspace] deleteWorkspace request:", { workspaceId, userId });
+
     if (!workspaceId) {
         throw new ApiError(400, "Workspace ID is required");
     }
@@ -151,21 +167,25 @@ const deleteWorkspace = asyncHandler(async (req, res) => {
         });
         
         if (!workspace) {
+            console.warn(`[Workspace] Workspace not found for delete id ${workspaceId}`);
             throw new ApiError(404, "Workspace not found");
         }
 
         if (workspace.ownerId !== userId) {
+            console.warn(`[Workspace] Unauthorized delete attempt for workspace ${workspaceId} by user ${userId}`);
             throw new ApiError(403, "You do not have permission to delete this workspace");
         }
 
         await prisma.workspace.delete({
             where: { id: workspaceId },
         });
+        console.log(`[Workspace] Deleted workspace id ${workspaceId}`);
 
         // Invalidate workspaces list and workspace detail caches
         try {
             await redisClient.del(`workspaces:${userId}`);
             await redisClient.del(`workspace:${workspaceId}`);
+            console.log(`[Workspace] Cache invalidated for workspaces:${userId} and workspace:${workspaceId}`);
         } catch (err) {
             console.error("Redis deletion error:", err);
         }
@@ -181,6 +201,8 @@ const getWorkspaceAndCompaniesByWorkspaceId = asyncHandler(async (req, res) => {
     const auth = getAuth(req);
     const userId = auth.userId; 
 
+    console.log("[Workspace] getWorkspaceAndCompaniesByWorkspaceId request:", { workspaceId, userId });
+
     if (!workspaceId) {
         throw new ApiError(400, "Workspace ID is required");
     }
@@ -188,24 +210,18 @@ const getWorkspaceAndCompaniesByWorkspaceId = asyncHandler(async (req, res) => {
         throw new ApiError(401, "Unauthorized");
     }
 
-    const userExists = await prisma.user.findUnique({
-        where: {
-            id: userId
-        }
-    });
-
-    if (!userExists) {
-        throw new ApiError(404, "User not found");
+    const parsedWorkspaceId = parseInt(workspaceId);
+    if (isNaN(parsedWorkspaceId)) {
+        throw new ApiError(400, "Workspace ID must be a number");
     }
 
-    const parsedWorkspaceId = parseInt(workspaceId);
-    const workspaceExits = await prisma.workspace.findUnique({
-        where: {
-            id: parsedWorkspaceId
-        }
+    const workspace = await prisma.workspace.findUnique({
+        where: { id: parsedWorkspaceId },
+        select: { ownerId: true }
     });
 
-    if (!workspaceExits) {
+    if (!workspace || workspace.ownerId !== userId) {
+        console.warn(`[Workspace] Workspace not found or unauthorized for id ${parsedWorkspaceId} by user ${userId}`);
         throw new ApiError(404, "Workspace not found");
     }
 
@@ -213,10 +229,12 @@ const getWorkspaceAndCompaniesByWorkspaceId = asyncHandler(async (req, res) => {
     try {
         const cachedWorkspace = await redisClient.get(cacheKey);
         if (cachedWorkspace) {
+            console.log(`[Workspace] Cache HIT for ${cacheKey}`);
             return res.status(200).json(
                 new ApiResponse(200, JSON.parse(cachedWorkspace), "Workspace and companies fetched successfully from cache")
             );
         }
+        console.log(`[Workspace] Cache MISS for ${cacheKey}`);
     } catch (err) {
         console.error("Redis read error:", err);
     }
@@ -230,9 +248,11 @@ const getWorkspaceAndCompaniesByWorkspaceId = asyncHandler(async (req, res) => {
                 companies: true
             }
         });
+        console.log(`[Workspace] Retrieved workspace ${parsedWorkspaceId} with ${workspaceWithCompanies?.companies?.length || 0} companies from DB`);
 
         try {
             await redisClient.set(cacheKey, JSON.stringify(workspaceWithCompanies), { EX: 3600 });
+            console.log(`[Workspace] Cached workspace details at ${cacheKey} (TTL 3600s)`);
         } catch (err) {
             console.error("Redis write error:", err);
         }

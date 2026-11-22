@@ -91,3 +91,37 @@ dump.rdb
 .cache/
 tmp/
 temp/
+
+# =========================
+# Terraform & Infrastructure
+# =========================
+# Local .terraform directories and provider binaries
+**/.terraform/
+.terraform/
+
+# State files (contain private/public IP addresses, secrets, AWS resource IDs)
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# Variables & Secrets (contains personal IP addresses, secrets, custom vars)
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+!terraform.tfvars.example
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Overrides
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# =========================
+# Ansible & Inventory
+# =========================
+inventory.ini
+*.inventory.ini

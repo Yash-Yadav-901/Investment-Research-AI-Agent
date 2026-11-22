@@ -38,7 +38,7 @@ const baseModel = new ChatGroq({
     apiKey: process.env.GROQ_API_KEY,
     model: process.env.GROQ_MODEL,
     temperature: 0,
-    maxRetries: 4,
+    maxRetries: 1,
 });
 
 
@@ -129,6 +129,13 @@ function explainModelError(error) {
     }
 
     return message;
+}
+
+function getRetryDelayMs(message) {
+    const m = message.match(/try again in (?:(\d+)m)?\s*([\d.]+)s/i);
+    if (!m) return 15000;
+    const secs = parseInt(m[1] || "0") * 60 + parseFloat(m[2]);
+    return Math.min(Math.ceil(secs * 1000) + 500, 70000);
 }
 
 
@@ -596,17 +603,9 @@ const getFundamentalsTool = tool(
                         assetProfile?.country
                     ),
 
-                    website: safeString(
-                        assetProfile?.website
-                    ),
-
-                    employeeCount: safeNumber(
-                        assetProfile?.fullTimeEmployees
-                    ),
-
                     businessSummary: safeString(
                         assetProfile?.longBusinessSummary
-                    ),
+                    )?.slice(0, 300) ?? null,
                 },
 
                 source: "Yahoo Finance",
@@ -694,7 +693,7 @@ const getWebNewsTool = tool(
                 {
                     topic: "news",
                     maxResults: 5,
-                    searchDepth: "advanced",
+                    searchDepth: "basic",
                 }
             );
 
@@ -713,7 +712,7 @@ const getWebNewsTool = tool(
 
                         content: safeString(
                             item?.content
-                        ),
+                        )?.slice(0, 300) ?? null,
 
                         publishedDate:
                             safeString(
@@ -929,6 +928,8 @@ const InvestmentReportSchema = z.object({
 
 
 async function callModel(state) {
+    console.log(`\n🤖 [AI Agent] Invoking LLM with ${state.messages.length} messages in context...`);
+
     const systemPrompt = {
         role: "system",
 
@@ -1008,6 +1009,14 @@ After all necessary tool calls and results are available, stop calling tools.
             ...state.messages,
         ]);
 
+    if (response?.tool_calls?.length > 0) {
+        console.log(`🔧 [AI Agent] LLM dispatched ${response.tool_calls.length} tool call(s):`, 
+            response.tool_calls.map(tc => `${tc.name}(${JSON.stringify(tc.args)})`).join(", ")
+        );
+    } else {
+        console.log(`🤖 [AI Agent] LLM completed research cycle. No more tool calls.`);
+    }
+
     return {
         messages: [response],
     };
@@ -1016,6 +1025,7 @@ After all necessary tool calls and results are available, stop calling tools.
 
 
 async function structureReportNode(state) {
+    console.log(`\n📝 [Report Structurer] Transforming agent findings into InvestmentReportSchema...`);
     const structuredLLM =
         baseModel.withStructuredOutput(
             InvestmentReportSchema
@@ -1183,6 +1193,13 @@ The rationale should provide a concise overall summary of:
             ...state.messages,
         ]);
 
+    console.log(`✅ [Report Structurer] Report generated successfully:`, {
+        ticker: output?.metadata?.ticker,
+        companyName: output?.metadata?.companyName,
+        decision: output?.verdict?.decision,
+        confidence: output?.verdict?.confidenceScore
+    });
+
     return {
         messages: [
             {
@@ -1214,9 +1231,11 @@ function shouldContinue(state) {
         Array.isArray(toolCalls) &&
         toolCalls.length > 0
     ) {
+        console.log(`🔀 [Graph Router] Transitioning -> "tools" (${toolCalls.length} calls)`);
         return "tools";
     }
 
+    console.log(`🔀 [Graph Router] Transitioning -> "structureReport"`);
     return "structureReport";
 }
 
@@ -1291,9 +1310,11 @@ async function researchAndAnalysis({ companyName }) {
     }
 
     const MAX_RETRIES = 2;
-    const RETRY_DELAY_MS = 15000;
 
     for (let attempt = 1; attempt <= MAX_RETRIES + 1; attempt++) {
+        const startTime = Date.now();
+        console.log(`\n🚀 [Research Workflow] Starting AI analysis for "${companyName}" (Attempt ${attempt}/${MAX_RETRIES + 1})...`);
+
         try {
             const finalState = await app.invoke(
                 {
@@ -1340,6 +1361,9 @@ Never fabricate unavailable information.
                 lastMessage.content
             );
 
+            const duration = Date.now() - startTime;
+            console.log(`🏁 [Research Workflow] Finished research for "${companyName}" in ${duration}ms. Report ready.`);
+
             return {
                 success: true,
                 generatedAt:
@@ -1348,11 +1372,13 @@ Never fabricate unavailable information.
             };
         } catch (error) {
             const message = explainModelError(error);
+            console.error(`💥 [Research Workflow] Error occurred during analysis for "${companyName}":`, message);
             const isRateLimit = /rate limit|quota|too many requests/i.test(message);
 
             if (isRateLimit && attempt <= MAX_RETRIES) {
-                console.warn(`⚠️ Rate limit hit (attempt ${attempt}/${MAX_RETRIES + 1}). Retrying in ${RETRY_DELAY_MS / 1000}s...`);
-                await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+                const waitMs = getRetryDelayMs(message);
+                console.warn(`⚠️ Rate limit hit (attempt ${attempt}/${MAX_RETRIES + 1}). Retrying in ${Math.round(waitMs / 1000)}s...`);
+                await new Promise((resolve) => setTimeout(resolve, waitMs));
                 continue;
             }
 
@@ -1365,4 +1391,4 @@ Never fabricate unavailable information.
     }
 }
 
-export { researchAndAnalysis };
+export { researchAndAnalysis, baseModel, getLivePriceTool, getFundamentalsTool, getWebNewsTool, InvestmentReportSchema, resolveTicker, RateLimitError, explainModelError, getRetryDelayMs };
