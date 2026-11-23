@@ -1,17 +1,17 @@
 import { useState } from "react";
-import { createPortal } from "react-dom";
 import { useDispatch } from "react-redux";
 import axiosInstance from "../../../utils/axiosConfig.js";
 import { addCompany } from "../../../store/InsideWorkSpaces.js";
 import { v4 as uuidv4 } from 'uuid';
 import { Handle, Position } from '@xyflow/react';
 import { toast } from 'react-hot-toast';
+import CompanyChoiceModal from "../companies/CompanyChoiceModal.jsx";
 
 const CompanyInputBox = ({ data }) => {
     const [companyName, setCompanyName] = useState("");
     const [isLoading, setIsLoading] = useState(false);
-    const [candidates, setCandidates] = useState([]);
-    const [showModal, setShowModal] = useState(false);
+    const [modal, setModal] = useState(null); // { query, candidates, notice } | null
+    const [modalBusy, setModalBusy] = useState(false);
     const dispatch = useDispatch();
     const { workspaceId } = data;
 
@@ -31,7 +31,7 @@ const CompanyInputBox = ({ data }) => {
 
     const executeCreateCompany = async (targetName, targetTicker = null) => {
         setIsLoading(true);
-        setShowModal(false);
+        setModal(null);
         try {
             const companyNodeData = {
                 id: uuidv4(),
@@ -53,7 +53,6 @@ const CompanyInputBox = ({ data }) => {
             if (response.data?.data) {
                 dispatch(addCompany(response.data.data));
                 setCompanyName(""); 
-                setCandidates([]);
                 toast.success(`Successfully analyzed ${targetName}!`);
             } else {
                 console.error("Invalid response data:", response.data);
@@ -63,6 +62,46 @@ const CompanyInputBox = ({ data }) => {
             handleError(error);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleResolved = async (query, resolveData) => {
+        if (resolveData?.status === "SINGLE" && resolveData?.candidate) {
+            await executeCreateCompany(resolveData.candidate.name, resolveData.candidate.ticker);
+        } else if (resolveData?.status === "MULTIPLE" && resolveData?.candidates?.length > 0) {
+            setModal({ query, candidates: resolveData.candidates, notice: "" });
+            setIsLoading(false);
+        } else {
+            // NO_MATCH or unrecognized status -> create with typed name only (old behaviour)
+            await executeCreateCompany(query, null);
+        }
+    };
+
+    const onProceed = async (sel) => {
+        if (sel.type === "candidate") {
+            setModal(null);
+            await executeCreateCompany(sel.candidate.name, sel.candidate.ticker);
+        } else if (sel.type === "typed") {
+            setModalBusy(true);
+            try {
+                const res = await axiosInstance.post("/api/v1/company/resolve", { company_name: sel.text });
+                const resolveData = res.data?.data;
+                if (resolveData?.status === "MULTIPLE") {
+                    setModal({
+                        query: sel.text,
+                        candidates: resolveData.candidates,
+                        notice: `Still more than one company matches "${sel.text}". Please choose one or type a fuller name.`,
+                    });
+                } else {
+                    setModal(null);
+                    await handleResolved(sel.text, resolveData);
+                }
+            } catch {
+                toast.error("Could not check that name. Please try again.");
+                // keep modal open
+            } finally {
+                setModalBusy(false);
+            }
         }
     };
 
@@ -78,17 +117,7 @@ const CompanyInputBox = ({ data }) => {
                 company_name: companyName.trim(),
             });
             const resolveData = resolveRes.data?.data;
-
-            if (resolveData?.status === "SINGLE" && resolveData?.candidate) {
-                await executeCreateCompany(resolveData.candidate.name, resolveData.candidate.ticker);
-            } else if (resolveData?.status === "MULTIPLE" && resolveData?.candidates?.length > 0) {
-                setCandidates(resolveData.candidates);
-                setShowModal(true);
-                setIsLoading(false);
-            } else {
-                // NO_MATCH or unrecognized status -> create with typed name only
-                await executeCreateCompany(companyName.trim(), null);
-            }
+            await handleResolved(companyName.trim(), resolveData);
         } catch (error) {
             handleError(error);
             setIsLoading(false);
@@ -141,66 +170,15 @@ const CompanyInputBox = ({ data }) => {
                 className="!bg-[#3B82F6] !border-2 !border-[#0F172A] !w-3 !h-3"
             />
 
-            {showModal && typeof document !== "undefined" && createPortal(
-                <div className="fixed inset-0 bg-black/60 z-[9999] flex items-center justify-center p-4 nodrag nowheel">
-                    <div className="bg-white border-4 border-[#0F172A] rounded-2xl shadow-[6px_6px_0px_0px_#0F172A] max-w-md w-full p-5 text-[#0F172A] flex flex-col gap-4 nodrag nowheel">
-                        <div>
-                            <h3 className="text-sm font-black uppercase tracking-tight text-[#0F172A]">
-                                More than one company matches &ldquo;{companyName}&rdquo;
-                            </h3>
-                            <p className="text-xs font-bold text-slate-500 mt-1">
-                                Select the one you want to research
-                            </p>
-                        </div>
-
-                        <div className="flex flex-col gap-2 max-h-64 overflow-y-auto pr-1">
-                            {candidates.map((cand) => (
-                                <button
-                                    key={cand.ticker}
-                                    type="button"
-                                    onClick={() => executeCreateCompany(cand.name, cand.ticker)}
-                                    className="flex items-center justify-between p-3 border-2 border-[#0F172A] rounded-xl hover:bg-[#FEF08A] hover:-translate-y-[2px] active:translate-y-0 transition-all text-left shadow-[2px_2px_0px_0px_#0F172A] bg-white cursor-pointer"
-                                >
-                                    <div className="flex flex-col pr-2">
-                                        <span className="text-xs font-black text-[#0F172A]">{cand.name}</span>
-                                        <span className="text-[10px] font-bold text-slate-500">{cand.exchange}</span>
-                                        {cand.otherListings && cand.otherListings.length > 0 && (
-                                            <span className="text-[10px] font-semibold text-slate-500 mt-0.5">
-                                                Also listed: {cand.otherListings.map((o) => `${o.ticker} (${o.exchange})`).join(", ")}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <span className="text-xs font-mono font-bold bg-[#E0E7FF] text-[#1E1B4B] px-2 py-0.5 border border-[#0F172A] rounded-md shrink-0">
-                                        {cand.ticker}
-                                    </span>
-                                </button>
-                            ))}
-                            
-                            <button
-                                type="button"
-                                onClick={() => executeCreateCompany(companyName.trim(), null)}
-                                className="flex items-center justify-between p-3 border-2 border-dashed border-[#0F172A] rounded-xl hover:bg-slate-100 transition-colors text-left bg-white cursor-pointer"
-                            >
-                                <span className="text-xs font-black text-slate-700">None of these / private company</span>
-                                <span className="text-[10px] uppercase font-bold text-slate-400">Search &ldquo;{companyName}&rdquo;</span>
-                            </button>
-                        </div>
-
-                        <div className="flex justify-end pt-2 border-t-2 border-slate-100">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setShowModal(false);
-                                    setCandidates([]);
-                                }}
-                                className="px-4 py-2 border-2 border-[#0F172A] rounded-xl font-black text-xs uppercase hover:bg-slate-100 active:translate-y-0 shadow-[2px_2px_0px_0px_#0F172A] transition-all cursor-pointer"
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                </div>,
-                document.body
+            {modal && (
+                <CompanyChoiceModal
+                    query={modal.query}
+                    candidates={modal.candidates}
+                    notice={modal.notice}
+                    busy={modalBusy}
+                    onProceed={onProceed}
+                    onCancel={() => setModal(null)}
+                />
             )}
         </div>
     );

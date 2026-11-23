@@ -247,6 +247,7 @@ Rules:
   If a metric is null, say it cannot be assessed.
 - evidenceUsed: each item = claim, exact evidence (a metric value or news title), source ("Yahoo Finance" or "Tavily").
 - If private, companySummary must say: "${cls.cleanName} is a privately held company. No public financial data is available."
+- Do not compare against sector averages, peers or history unless that comparison is in the data.
 - Do not claim certainty about future returns.`;
 
     if (appendPrompt) {
@@ -347,10 +348,16 @@ export async function researchAndAnalysisV2({ companyName, ticker }) {
     }
     const rawInput = companyName.trim().slice(0, 100);
 
+    // If the caller passed a plain ticker-like string, treat it as a ticker directly
+    if (!ticker && /^[A-Za-z0-9&-]{1,15}\.(NS|BO)$/i.test(rawInput)) {
+        ticker = rawInput.toUpperCase();
+    }
+
     const MAX_RETRIES = 2;
     let cache = {}; // keeps finished steps so a retry does NOT redo them
     let analystAppendPrompt = "";
     let lengthRetried = false;
+    let networkRetries = 0;
 
     for (let attempt = 1; attempt <= MAX_RETRIES + 1; attempt++) {
         try {
@@ -400,6 +407,16 @@ export async function researchAndAnalysisV2({ companyName, ticker }) {
                 analystAppendPrompt = "Keep every field extremely short.";
                 console.warn("⚠️ [V2] Output too long error. Retrying analyst with shortened prompt instruction...");
                 attempt--; // separate retry budget from rate limits
+                continue;
+            }
+
+            const isNetworkError = /connection error|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|fetch failed|socket hang up/i.test(rawMessage);
+            if (isNetworkError && networkRetries < 2) {
+                networkRetries++;
+                console.warn(`⚠️ [V2] Network error. Retry ${networkRetries}/2 in ${networkRetries * 3}s...`);
+                if (!cache.data?.news?.results?.length) delete cache.data;
+                await sleep(networkRetries * 3000);
+                attempt--;
                 continue;
             }
 
