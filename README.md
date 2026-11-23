@@ -94,7 +94,7 @@ Each company dashboard includes a **Groq-powered chatbot** that:
 - Is pre-loaded with the full company research report as system context
 - Answers questions like "What is the P/E ratio?", "Summarize the risks", "Should I invest?"
 - Maintains conversation history within the session (stateless — resets on page reload)
-- Uses Llama-3.3-70b-versatile for fast, accurate financial Q&A
+- Uses **openai/gpt-oss-120b** (or Llama-3.3-70b-versatile) via Groq for fast, accurate financial Q&A with low reasoning latency
 
 ---
 
@@ -302,6 +302,16 @@ END  →  Structured JSON report returned to controller
 | `get_financial_fundamentals` | Yahoo Finance (quoteSummary) | P/E, market cap, debt/equity, revenue growth, ROE, profit margins |
 | `search_market_news` | Tavily Web Search | Recent news, earnings events, risks, catalysts |
 
+### 🤖 LLM Models in Use & Architecture
+
+The application uses high-throughput models hosted on **Groq LPU infrastructure**:
+
+| Pipeline Stage | Model Identifier | Provider / Engine | Purpose & Configuration |
+|---|---|---|---|
+| **Classifier** | `openai/gpt-oss-120b` (or `llama-3.3-70b-versatile`) | Groq via LangChain | Classifies company as Indian vs Global and Public vs Private using strict Zod output (`ClassifySchema`). |
+| **Financial Analyst & Report Generation** | `openai/gpt-oss-120b` | Groq (`@langchain/groq`) | Synthesizes financial metrics, risk assessment, recent news, catalysts, and final recommendation. Runs with `temperature: 0`, `maxTokens: 2500`, and `reasoningEffort: "low"` for deterministic, low-latency structured output. |
+| **Interactive Dashboard Chat** | `openai/gpt-oss-120b` (or `llama-3.3-70b-versatile`) | Groq API | Context-aware Q&A assistant embedded directly in the company dashboard. Pre-loaded with the structured company report in system prompt. |
+
 ### Database Schema
 
 ```
@@ -329,10 +339,10 @@ In building this system, I made several critical design choices to balance accur
 
 ---
 
-### 2. I chose Groq (Llama-3.3-70b-versatile) as my LLM backbone
+### 2. I chose Groq (`openai/gpt-oss-120b` & `llama-3.3-70b-versatile`) as my LLM backbone
 
-* **Why I chose it:** Since this is an interactive research dashboard, users expect responses within seconds. Groq's dedicated LPU architecture provides incredibly fast token throughput for Llama-3.3-70b, making the multi-step research loop feel snappy and responsive.
-* **The trade-off I accepted:** Groq's free tier has strict rate limits. To handle this defensively, I implemented a custom error handler (`RateLimitError`) on the backend and added an automatic 15-second back-off retry mechanism (up to 2 retries) before raising a user-facing warning.
+* **Why I chose it:** Since this is an interactive research dashboard, users expect responses within seconds. Groq's dedicated LPU architecture provides ultra-fast token throughput. We use **`openai/gpt-oss-120b`** with `reasoningEffort: "low"` for deep financial synthesis, strict JSON structuring, and reasoning without long token-generation delays, while also supporting `llama-3.3-70b-versatile`.
+* **The trade-off I accepted:** Groq's API has strict rate limits. To handle this defensively, I implemented a custom error handler (`RateLimitError`) on the backend and added an automatic 15-second back-off retry mechanism (up to 2 retries) before raising a user-facing warning.
 
 ---
 
@@ -449,7 +459,7 @@ CLERK_SECRET_KEY=sk_test_...
 
 # AI Services
 GROQ_API_KEY=gsk_...
-GROQ_MODEL=llama-3.3-70b-versatile
+GROQ_MODEL=openai/gpt-oss-120b # or llama-3.3-70b-versatile
 TAVILY_API_KEY=tvly-...
 
 # Redis
@@ -493,7 +503,7 @@ VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
 
 # Groq (for stateless chat in the browser)
 VITE_GROQ_API_KEY=gsk_...
-VITE_GROQ_MODEL=llama-3.3-70b-versatile
+VITE_GROQ_MODEL=openai/gpt-oss-120b # or llama-3.3-70b-versatile
 ```
 
 Start the frontend:
@@ -528,7 +538,7 @@ npm run dev
 | `CLERK_PUBLISHABLE_KEY` | Yes | Clerk frontend key |
 | `CLERK_SECRET_KEY` | Yes | Clerk backend secret key |
 | `GROQ_API_KEY` | Yes | Groq API key for LLM calls |
-| `GROQ_MODEL` | Yes | Groq model name (e.g., `llama-3.3-70b-versatile`) |
+| `GROQ_MODEL` | Yes | Groq model name (`openai/gpt-oss-120b` or `llama-3.3-70b-versatile`) |
 | `TAVILY_API_KEY` | Yes | Tavily web search API key |
 | `REDIS_URL` | Yes | Redis connection URL |
 | `CORS_ORIGIN` | Yes | Allowed frontend origin(s), comma-separated |
@@ -540,7 +550,7 @@ npm run dev
 | `VITE_API_BASE_URL` | Yes | Backend base URL |
 | `VITE_CLERK_PUBLISHABLE_KEY` | Yes | Clerk frontend key (same as backend) |
 | `VITE_GROQ_API_KEY` | Yes | Groq key for browser-side chat |
-| `VITE_GROQ_MODEL` | Yes | Groq model for browser-side chat |
+| `VITE_GROQ_MODEL` | Yes | Groq model for browser-side chat (`openai/gpt-oss-120b` or `llama-3.3-70b-versatile`) |
 
 ---
 
@@ -1005,7 +1015,7 @@ The current PDF generation is minimal. A proper PDF template using Puppeteer + a
 | **ORM** | Prisma + Neon PostgreSQL |
 | **Cache** | Redis (node-redis) |
 | **AI Agent Framework** | LangChain.js + LangGraph |
-| **LLM** | Groq (Llama-3.3-70b-versatile) |
+| **LLM** | Groq (`openai/gpt-oss-120b` / `llama-3.3-70b-versatile`) |
 | **Financial Data** | Yahoo Finance 2 (yahoo-finance2) |
 | **Web Search** | Tavily AI Search API |
 | **PDF Generation** | Puppeteer |
