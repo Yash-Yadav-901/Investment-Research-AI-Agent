@@ -5,16 +5,26 @@ import axiosInstance from '../../../utils/axiosConfig';
 import { removeCompany } from '../../../store/InsideWorkSpaces';
 import { toast } from 'react-hot-toast';
 
-const formatCurrency = (val) => {
+const formatCurrency = (val, currency) => {
     if (val === undefined || val === null) return "N/A";
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
+    if (!currency) return new Intl.NumberFormat('en-US').format(val);
+    try {
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(val);
+    } catch {
+        return `${currency} ${new Intl.NumberFormat('en-US').format(val)}`;
+    }
 };
 
-const formatMarketCap = (val) => {
-    if (!val) return "N/A";
-    if (val >= 1e12) return `$${(val / 1e12).toFixed(2)}T`;
-    if (val >= 1e9) return `$${(val / 1e9).toFixed(2)}B`;
-    return `$${(val / 1e6).toFixed(2)}M`;
+const formatMarketCap = (val, currency) => {
+    if (val === undefined || val === null) return "N/A";
+    if (!currency) {
+        return new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 2 }).format(val);
+    }
+    try {
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency, notation: 'compact', maximumFractionDigits: 2 }).format(val);
+    } catch {
+        return `${currency} ${new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 2 }).format(val)}`;
+    }
 };
 
 const formatPercent = (val) => {
@@ -357,8 +367,7 @@ Provide analytical, helpful, and concise answers based strictly on the provided 
                                 <div className="bg-white border-2 border-[#0F172A] rounded-xl p-4 shadow-[3px_3px_0px_0px_#0F172A] hover:-translate-y-[2px] transition-all">
                                     <span className="block text-[10px] text-slate-500 font-black">SHARE PRICE</span>
                                     <div className="mt-1 flex items-baseline gap-0.5 flex-wrap">
-                                        <span className="text-xl font-black text-[#0F172A]">{formatCurrency(payload.financialMetrics?.price)}</span>
-                                        <span className="text-[10px] font-bold text-slate-400 ml-0.5">{payload.financialMetrics?.currency}</span>
+                                        <span className="text-xl font-black text-[#0F172A]">{formatCurrency(payload.financialMetrics?.price, payload.financialMetrics?.currency)}</span>
                                     </div>
                                 </div>
 
@@ -380,7 +389,7 @@ Provide analytical, helpful, and concise answers based strictly on the provided 
                                 <div className="bg-white border-2 border-[#0F172A] rounded-xl p-4 shadow-[3px_3px_0px_0px_#0F172A] hover:-translate-y-[2px] transition-all">
                                     <span className="block text-[10px] text-slate-500 font-black">MARKET CAP</span>
                                     <div className="mt-1">
-                                        <span className="text-xl font-black text-[#0F172A]">{formatMarketCap(payload.financialMetrics?.marketCap)}</span>
+                                        <span className="text-xl font-black text-[#0F172A]">{formatMarketCap(payload.financialMetrics?.marketCap, payload.financialMetrics?.currency)}</span>
                                     </div>
                                 </div>
 

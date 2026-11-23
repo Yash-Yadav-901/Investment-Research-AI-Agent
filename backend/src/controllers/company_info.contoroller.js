@@ -3,7 +3,7 @@ import { ApiResponse } from "../utils/api_response.js";
 import { ApiError } from "../utils/api_error.js";
 import { PrismaClient } from "@prisma/client";
 import { getAuth } from '@clerk/express';
-import { researchAndAnalysis } from "../services/analysysAndResearch.js";
+import { researchAndAnalysis, RateLimitError } from "../services/analysysAndResearch.js";
 import { researchAndAnalysisV2 } from "../services/analysisV2.js";
 import { resolveCompany } from "../services/resolveCompany.js";
 import { redisClient } from "../../redis/index.js";
@@ -13,7 +13,7 @@ const prisma = new PrismaClient();
 const analyze = process.env.USE_V2 === "false" ? researchAndAnalysis : researchAndAnalysisV2;
 
 const getCompanyCacheKey = (companyName) =>
-    `companyInfo:${companyName.trim().toLowerCase().replace(/\s+/g, " ")}`;
+    `companyInfo:${companyName.trim().replace(/[).]+$/, "").toLowerCase().replace(/\s+/g, " ")}`;
 
 const resolveCompanyHandler = asyncHandler(async (req, res) => {
     const { userId } = getAuth(req);
@@ -137,10 +137,11 @@ const createCompanyInfo = asyncHandler(async (req, res) => {
         );
     } catch (error) {
         console.error("Error in createCompanyInfo:", error);
-        if (error.statusCode === 429 || error.name === "RateLimitError") {
+        if (error instanceof ApiError) throw error;
+        if (error instanceof RateLimitError || error.statusCode === 429 || error.name === "RateLimitError") {
             throw new ApiError(429, "AI service is temporarily rate-limited. Please wait a moment and try again.");
         }
-        throw new ApiError(500, error.message || "Something went wrong in createCompanyInfo");
+        throw new ApiError(500, "Analysis failed. Please try again.");
     }
 });
 
@@ -208,10 +209,11 @@ const updateCompanyInfo = asyncHandler(async (req, res) => {
         );
     } catch (error) {
         console.error("Error in updateCompanyInfo:", error);
-        if (error.statusCode === 429 || error.name === "RateLimitError") {
+        if (error instanceof ApiError) throw error;
+        if (error instanceof RateLimitError || error.statusCode === 429 || error.name === "RateLimitError") {
             throw new ApiError(429, "AI service is temporarily rate-limited. Please wait a moment and try again.");
         }
-        throw new ApiError(500, "Something went wrong in updateCompanyInfo");
+        throw new ApiError(500, "Analysis failed. Please try again.");
     }
 });
 
