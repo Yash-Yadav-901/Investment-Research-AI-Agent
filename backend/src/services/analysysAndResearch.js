@@ -32,7 +32,19 @@ if (!process.env.TAVILY_API_KEY) {
 
 
 
-const yahooFinance = new YahooFinance();
+const yahooFinance = new YahooFinance({
+    suppressNotices: ["yahooSurvey"],
+    fetchOptions: {
+        headers: {
+            "User-Agent":
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+            "Accept":
+                "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Referer": "https://finance.yahoo.com/",
+        },
+    },
+});
 
 const baseModel = new ChatGroq({
     apiKey: process.env.GROQ_API_KEY,
