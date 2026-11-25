@@ -8,6 +8,15 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
+function sanitizeUrl(url) {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  if (/^https?:\/\//i.test(trimmed)) {
+    return escapeHtml(trimmed);
+  }
+  return '';
+}
+
 /**
  * Generates a clean, print-optimized HTML string suitable for PDF conversion engines (like Puppeteer).
  * Handles flat DB models or nested JSON structures gracefully.
@@ -73,9 +82,9 @@ function renderReportHTML(rawDataInput) {
     ? data.recentNews 
     : (data.recentNews ? JSON.parse(data.recentNews) : []);
   const recentNews = rawNews.map(item => ({
-    headline: escapeHtml(item.headline),
-    summary: escapeHtml(item.summary),
-    url: escapeHtml(item.url),
+    headline: escapeHtml(item.headline || item.title || ""),
+    summary: escapeHtml(item.summary || item.content || ""),
+    url: sanitizeUrl(item.url),
   }));
 
   // Extracting Decision Analysis block with HTML escaping
@@ -291,6 +300,10 @@ function renderReportHTML(rawDataInput) {
                 <h4 class="text-xs font-bold uppercase text-gray-500 mb-1">Earnings &amp; Growth Vectors</h4>
                 <p class="text-xs text-gray-700 leading-relaxed">${growthAssessment}</p>
               </div>
+              <div class="bg-gray-50 p-4 rounded-lg border border-gray-200/60 break-avoid">
+                <h4 class="text-xs font-bold uppercase text-gray-500 mb-1">News &amp; Market Sentiment</h4>
+                <p class="text-xs text-gray-700 leading-relaxed">${newsSentimentAssessment}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -348,6 +361,24 @@ function renderReportHTML(rawDataInput) {
               ${finalDecisionReason}
             </p>
           </div>
+
+          <!-- Recent Market Intelligence & Headlines -->
+          ${recentNews.length > 0 ? `
+          <div class="mb-8 break-avoid">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 border-b border-gray-200 pb-2 mb-3">Recent Market News &amp; Developments</h3>
+            <div class="space-y-2">
+              ${recentNews.map(item => `
+                <div class="bg-gray-50 p-3 rounded-lg border border-gray-200/60">
+                  <div class="flex items-baseline justify-between gap-2">
+                    <span class="text-xs font-bold text-gray-900">${item.headline}</span>
+                    ${item.url ? `<a href="${item.url}" class="text-[10px] text-blue-600 hover:underline shrink-0 font-mono" target="_blank" rel="noopener noreferrer">Source</a>` : ''}
+                  </div>
+                  ${item.summary ? `<p class="text-xs text-gray-600 mt-1 leading-relaxed">${item.summary}</p>` : ''}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          ` : ''}
 
           <!-- Evidence Verification Ledger -->
           <div class="break-avoid mb-8">

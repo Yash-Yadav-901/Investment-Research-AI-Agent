@@ -115,13 +115,9 @@ const updateWorkspaceName = asyncHandler(async (req, res) => {
             where: { id: parsedId },
         });
 
-        if (!workspace) {
-            console.warn(`[Workspace] Workspace not found for id ${parsedId}`);
+        if (!workspace || workspace.ownerId !== userId) {
+            console.warn(`[Workspace] Workspace not found or unauthorized for id ${parsedId} by user ${userId}`);
             throw new ApiError(404, "Workspace not found");
-        }
-        if (workspace.ownerId !== userId) {
-            console.warn(`[Workspace] Unauthorized update attempt for workspace ${parsedId} by user ${userId}`);
-            throw new ApiError(403, "You do not have permission to update this workspace");
         }
 
         const updatedWorkspace = await prisma.workspace.update({
@@ -161,31 +157,31 @@ const deleteWorkspace = asyncHandler(async (req, res) => {
         throw new ApiError(401, "Unauthorized");
     }
 
+    const parsedWorkspaceId = parseInt(workspaceId);
+    if (isNaN(parsedWorkspaceId)) {
+        throw new ApiError(400, "Workspace ID must be a number");
+    }
+
     try {
         const workspace = await prisma.workspace.findUnique({
-            where: { id: workspaceId },
+            where: { id: parsedWorkspaceId },
         });
         
-        if (!workspace) {
-            console.warn(`[Workspace] Workspace not found for delete id ${workspaceId}`);
+        if (!workspace || workspace.ownerId !== userId) {
+            console.warn(`[Workspace] Workspace not found or unauthorized for delete id ${parsedWorkspaceId} by user ${userId}`);
             throw new ApiError(404, "Workspace not found");
         }
 
-        if (workspace.ownerId !== userId) {
-            console.warn(`[Workspace] Unauthorized delete attempt for workspace ${workspaceId} by user ${userId}`);
-            throw new ApiError(403, "You do not have permission to delete this workspace");
-        }
-
         await prisma.workspace.delete({
-            where: { id: workspaceId },
+            where: { id: parsedWorkspaceId },
         });
-        console.log(`[Workspace] Deleted workspace id ${workspaceId}`);
+        console.log(`[Workspace] Deleted workspace id ${parsedWorkspaceId}`);
 
         // Invalidate workspaces list and workspace detail caches
         try {
             await redisClient.del(`workspaces:${userId}`);
-            await redisClient.del(`workspace:${workspaceId}`);
-            console.log(`[Workspace] Cache invalidated for workspaces:${userId} and workspace:${workspaceId}`);
+            await redisClient.del(`workspace:${parsedWorkspaceId}`);
+            console.log(`[Workspace] Cache invalidated for workspaces:${userId} and workspace:${parsedWorkspaceId}`);
         } catch (err) {
             console.error("Redis deletion error:", err);
         }

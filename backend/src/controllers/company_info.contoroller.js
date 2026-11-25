@@ -74,14 +74,9 @@ const createCompanyInfo = asyncHandler(async (req, res) => {
         where: { id: parseInt(workspaceId) }
     });
 
-    if (!workspaceExists) {
-        console.warn(`[Company] Workspace ${workspaceId} not found`);
+    if (!workspaceExists || workspaceExists.ownerId !== userId) {
+        console.warn(`[Company] Workspace not found or unauthorized for id ${workspaceId} by user ${userId}`);
         throw new ApiError(404, "Workspace not found");
-    }
-
-    if (workspaceExists.ownerId !== userId) {
-        console.warn(`[Company] Unauthorized access to workspace ${workspaceId} by user ${userId}`);
-        throw new ApiError(403, "You do not have permission to add to this workspace");
     }
 
     const key = ticker ? `companyInfo:${ticker.toLowerCase()}` : getCompanyCacheKey(company_name);
@@ -161,14 +156,9 @@ const updateCompanyInfo = asyncHandler(async (req, res) => {
         include: { workspace: true }
     });
 
-    if (!companyExists) {
-        console.warn(`[Company] Company ${companyId} not found`);
+    if (!companyExists || companyExists.workspace?.ownerId !== userId) {
+        console.warn(`[Company] Company not found or unauthorized for id ${companyId} by user ${userId}`);
         throw new ApiError(404, "Company not found");
-    }
-
-    if (companyExists.workspace.ownerId !== userId) {
-        console.warn(`[Company] Unauthorized update for company ${companyId} by user ${userId}`);
-        throw new ApiError(403, "You do not have permission to update this company");
     }
 
     const key = getCompanyCacheKey(companyExists.name);
@@ -233,14 +223,9 @@ const removeCompanyInfo = asyncHandler(async (req, res) => {
         include: { workspace: true }
     });
 
-    if (!companyExists) {
-        console.warn(`[Company] Company ${companyId} not found`);
+    if (!companyExists || companyExists.workspace?.ownerId !== userId) {
+        console.warn(`[Company] Company not found or unauthorized for id ${companyId} by user ${userId}`);
         throw new ApiError(404, "Company not found");
-    }
-
-    if (companyExists.workspace.ownerId !== userId) {
-        console.warn(`[Company] Unauthorized removal for company ${companyId} by user ${userId}`);
-        throw new ApiError(403, "You do not have permission to delete this company");
     }
 
     const key = getCompanyCacheKey(companyExists.name);
