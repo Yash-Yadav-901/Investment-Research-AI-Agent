@@ -209,6 +209,21 @@ function parseMarketCapString(str) {
     return num;
 }
 
+function parseFinancialNumber(str) {
+    if (!str) return null;
+    const cleaned = String(str).replace(/,/g, "").trim();
+    const match = cleaned.match(/^([+-]?[0-9.]+)\s*([TCBMK%]?)/i);
+    if (!match) return null;
+    const num = parseFloat(match[1]);
+    const unit = (match[2] || "").toUpperCase();
+    if (unit === "%") return num / 100;
+    if (unit === "T") return num * 1e12;
+    if (unit === "B") return num * 1e9;
+    if (unit === "M") return num * 1e6;
+    if (unit === "K") return num * 1e3;
+    return num;
+}
+
 async function fetchGoogleFinanceFundamentals(ticker, market) {
     try {
         const cleanTicker = ticker.replace(/\.(NS|BO)$/i, "").trim();
@@ -217,30 +232,109 @@ async function fetchGoogleFinanceFundamentals(ticker, market) {
         if (exch) {
             urls.push(`https://www.google.com/finance/quote/${cleanTicker}:${exch}`);
         } else {
-            urls.push(`https://www.google.com/finance/quote/${cleanTicker}:NASDAQ`);
             urls.push(`https://www.google.com/finance/quote/${cleanTicker}:NYSE`);
+            urls.push(`https://www.google.com/finance/quote/${cleanTicker}:NASDAQ`);
             urls.push(`https://www.google.com/finance/quote/${cleanTicker}`);
         }
 
         for (const url of urls) {
-            const res = await fetch(url, { headers: BROWSER_HEADERS });
-            if (!res.ok) continue;
-            const html = await res.text();
-            if (html.includes("did not match any documents") || html.length < 5000) continue;
+            try {
+                const res = await fetch(url, { headers: BROWSER_HEADERS });
+                if (!res.ok) continue;
+                const html = await res.text();
+                if (html.includes("did not match any documents") || html.length < 5000) continue;
 
-            const peMatch = html.match(/P\/E ratio[\s\S]*?<div[^>]*class="[^"]*P6K39c[^"]*"[^>]*>([^<]+)<\/div>/i) ||
-                            html.match(/P\/E ratio[\s\S]*?<div[^>]*>([0-9.,]+)<\/div>/i);
-            const mcapMatch = html.match(/Market cap[\s\S]*?<div[^>]*class="[^"]*P6K39c[^"]*"[^>]*>([^<]+)<\/div>/i) ||
-                              html.match(/Market cap[\s\S]*?<div[^>]*>([0-9.,]+[A-Za-z\s]+)<\/div>/i);
+                const peMatch = html.match(/P\/E ratio[\s\S]*?<div[^>]*class="[^"]*P6K39c[^"]*"[^>]*>([^<]+)<\/div>/i) ||
+                                html.match(/P\/E ratio[\s\S]*?<div[^>]*>([0-9.,]+)<\/div>/i);
+                const mcapMatch = html.match(/Market cap[\s\S]*?<div[^>]*class="[^"]*P6K39c[^"]*"[^>]*>([^<]+)<\/div>/i) ||
+                                  html.match(/Market cap[\s\S]*?<div[^>]*>([0-9.,]+[A-Za-z\s]+)<\/div>/i);
 
-            const peRatio = peMatch ? parseFloat(peMatch[1].replace(/,/g, "")) : null;
-            const marketCap = mcapMatch ? parseMarketCapString(mcapMatch[1]) : null;
+                const peRatio = peMatch ? parseFloat(peMatch[1].replace(/,/g, "")) : null;
+                const marketCap = mcapMatch ? parseMarketCapString(mcapMatch[1]) : null;
 
-            if (peRatio !== null || marketCap !== null) {
+                let profitMargins = null;
+                let revenueGrowth = null;
+                let earningsGrowth = null;
+
+                const trMatches = [...html.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/g)];
+                for (const m of trMatches) {
+                    const row = m[1];
+                    if (row.includes("Net profit margin")) {
+                        const vals = [...row.matchAll(/<div class="CNzF7d">([^<]+)<\/div>/g)].map(x => x[1].trim());
+                        if (vals.length > 0) {
+                            const latestVal = parseFinancialNumber(vals[vals.length - 1]);
+                            if (latestVal !== null) profitMargins = latestVal;
+                        }
+                    }
+                    if (row.includes("Revenue") && !row.includes("Cost of revenue")) {
+                        const vals = [...row.matchAll(/<div class="CNzF7d">([^<]+)<\/div>/g)].map(x => x[1].trim());
+                        if (vals.length >= 2) {
+                            const first = parseFinancialNumber(vals[0]);
+                            const last = parseFinancialNumber(vals[vals.length - 1]);
+                            if (first && last && first > 0) {
+                                revenueGrowth = Number(((last - first) / first).toFixed(4));
+                            }
+                        }
+                    }
+                    if (row.includes("Net income") && !row.includes("Other")) {
+                        const vals = [...row.matchAll(/<div class="CNzF7d">([^<]+)<\/div>/g)].map(x => x[1].trim());
+                        if (vals.length >= 2) {
+                            const first = parseFinancialNumber(vals[0]);
+                            const last = parseFinancialNumber(vals[vals.length - 1]);
+                            if (first && last && Math.abs(first) > 0) {
+                                earningsGrowth = Number(((last - first) / Math.abs(first)).toFixed(4));
+                            }
+                        }
+                    }
+                }
+
+                if (peRatio === null && marketCap === null && profitMargins === null) {
+                    continue;
+                }
+
+                // If Indian stock, supplement with Screener for ROE, Debt/Equity, and domestic Market Cap
+                let returnOnEquity = null;
+                let debtToEquity = null;
+                let screenerMarketCap = null;
+                if (market === "INDIAN") {
+                    try {
+                        const scRes = await fetch(`https://www.screener.in/company/${cleanTicker}/consolidated/`, { headers: BROWSER_HEADERS });
+                        const scHtml = scRes.ok ? await scRes.text() : "";
+                        if (scHtml) {
+                            const roeMatch = scHtml.match(/ROE[\s\S]*?<span class="number">([^<]+)<\/span>/i);
+                            if (roeMatch) {
+                                const val = parseFloat(roeMatch[1].replace(/,/g, ""));
+                                if (Number.isFinite(val)) returnOnEquity = Number((val / 100).toFixed(4));
+                            }
+                            const scMcap = scHtml.match(/Market Cap[\s\S]*?<span class="number">([^<]+)<\/span>/i);
+                            if (scMcap) {
+                                const valCr = parseFloat(scMcap[1].replace(/,/g, ""));
+                                if (Number.isFinite(valCr)) screenerMarketCap = valCr * 1e7;
+                            }
+                            const bMatch = scHtml.match(/Borrowings[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>/i);
+                            const rMatch = scHtml.match(/Reserves[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>/i);
+                            const bVal = bMatch ? parseFloat(bMatch[1].replace(/<[^>]+>/g, "").replace(/,/g, "").trim()) : null;
+                            const rVal = rMatch ? parseFloat(rMatch[1].replace(/<[^>]+>/g, "").replace(/,/g, "").trim()) : null;
+                            if (Number.isFinite(bVal) && Number.isFinite(rVal) && rVal > 0) {
+                                // Scale as percentage to match Yahoo's debtToEquity convention
+                                debtToEquity = Number(((bVal / rVal) * 100).toFixed(2));
+                            }
+                        }
+                    } catch (scErr) {}
+                }
+
                 return {
                     peRatio: Number.isFinite(peRatio) ? peRatio : null,
-                    marketCap: Number.isFinite(marketCap) ? marketCap : null,
+                    marketCap: Number.isFinite(screenerMarketCap) ? screenerMarketCap : (Number.isFinite(marketCap) ? marketCap : null),
+                    profitMargins: Number.isFinite(profitMargins) ? profitMargins : null,
+                    revenueGrowth: Number.isFinite(revenueGrowth) ? revenueGrowth : null,
+                    earningsGrowth: Number.isFinite(earningsGrowth) ? earningsGrowth : null,
+                    returnOnEquity: Number.isFinite(returnOnEquity) ? returnOnEquity : null,
+                    debtToEquity: Number.isFinite(debtToEquity) ? debtToEquity : null,
+                    source: "Google Finance / Screener",
                 };
+            } catch (urlErr) {
+                continue;
             }
         }
     } catch (err) {
@@ -679,7 +773,9 @@ const getFundamentalsTool = tool(
             const debtToEquity =
                 safeNumber(
                     financialData?.debtToEquity
-                );
+                ) ??
+                gfData?.debtToEquity ??
+                null;
 
             const marketCap =
                 safeNumber(
@@ -697,22 +793,30 @@ const getFundamentalsTool = tool(
                 ) ??
                 safeNumber(
                     financialData?.profitMargins
-                );
+                ) ??
+                gfData?.profitMargins ??
+                null;
 
             const returnOnEquity =
                 safeNumber(
                     financialData?.returnOnEquity
-                );
+                ) ??
+                gfData?.returnOnEquity ??
+                null;
 
             const revenueGrowth =
                 safeNumber(
                     financialData?.revenueGrowth
-                );
+                ) ??
+                gfData?.revenueGrowth ??
+                null;
 
             const earningsGrowth =
                 safeNumber(
                     financialData?.earningsGrowth
-                );
+                ) ??
+                gfData?.earningsGrowth ??
+                null;
 
             const currentRatio =
                 safeNumber(
