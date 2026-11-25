@@ -83,8 +83,14 @@ async function resolveCompany(input) {
     try {
         searchResult = await yahooFinance.search(q, { quotesCount: 10, newsCount: 0 });
     } catch (err) {
-        console.error("[resolveCompany] Yahoo Finance search error:", err);
-        return { status: "NO_MATCH" };
+        console.warn("[resolveCompany] yahooFinance.search failed, attempting direct search fallback:", err?.message);
+        try {
+            const fallbackRes = await fetch(`https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(q)}&quotesCount=10&newsCount=0`);
+            searchResult = await fallbackRes.json();
+        } catch (fallbackErr) {
+            console.error("[resolveCompany] Direct search fallback also failed:", fallbackErr);
+            return { status: "NO_MATCH" };
+        }
     }
 
     const quotes = Array.isArray(searchResult?.quotes) ? searchResult.quotes : [];

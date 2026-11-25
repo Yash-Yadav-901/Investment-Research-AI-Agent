@@ -79,6 +79,9 @@ function isBseTicker(symbol = "") {
 }
 
 function safeNumber(value) {
+    if (value && typeof value === "object" && typeof value.raw === "number") {
+        return Number.isFinite(value.raw) ? value.raw : null;
+    }
     return typeof value === "number" &&
         Number.isFinite(value)
         ? value
@@ -86,6 +89,9 @@ function safeNumber(value) {
 }
 
 function safeString(value) {
+    if (value && typeof value === "object" && typeof value.fmt === "string") {
+        return value.fmt.trim() || null;
+    }
     return typeof value === "string" &&
         value.trim()
         ? value.trim()
@@ -154,6 +160,29 @@ function getRetryDelayMs(message) {
 
 
 
+let cachedCrumb = null;
+let cachedCookie = null;
+let crumbExpiresAt = 0;
+
+async function getDirectCrumb() {
+    const now = Date.now();
+    if (cachedCrumb && cachedCookie && now < crumbExpiresAt) {
+        return { cookie: cachedCookie, crumb: cachedCrumb };
+    }
+    const cookieRes = await fetch("https://fc.yahoo.com", { redirect: "manual" });
+    const cookie = cookieRes.headers.get("set-cookie");
+    if (!cookie) throw new Error("Could not obtain session cookie from fc.yahoo.com");
+    const crumbRes = await fetch("https://query1.finance.yahoo.com/v1/test/getcrumb", {
+        headers: { cookie, "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" }
+    });
+    const crumb = await crumbRes.text();
+    if (!crumb || crumb.includes("<html>")) throw new Error("Invalid crumb received from Yahoo: " + crumb);
+    cachedCookie = cookie;
+    cachedCrumb = crumb;
+    crumbExpiresAt = now + 60 * 60 * 1000;
+    return { cookie, crumb };
+}
+
 async function resolveTicker(ticker, market) {
     const rawTicker = normalizeTicker(ticker);
 
@@ -185,17 +214,23 @@ async function resolveTicker(ticker, market) {
 
     for (const query of searchQueries) {
         try {
-            const result = await yahooFinance.search(
-                query,
-                {
-                    quotesCount: 10,
-                    newsCount: 0,
-                }
-            );
-
-            const quotes = Array.isArray(result?.quotes)
-                ? result.quotes
-                : [];
+            let quotes = [];
+            try {
+                const result = await yahooFinance.search(
+                    query,
+                    {
+                        quotesCount: 10,
+                        newsCount: 0,
+                    }
+                );
+                quotes = Array.isArray(result?.quotes) ? result.quotes : [];
+            } catch (searchErr) {
+                try {
+                    const fallbackRes = await fetch(`https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=10&newsCount=0`);
+                    const fallbackData = await fallbackRes.json();
+                    quotes = Array.isArray(fallbackData?.quotes) ? fallbackData.quotes : [];
+                } catch (e) {}
+            }
 
             if (quotes.length === 0) {
                 continue;
@@ -329,9 +364,39 @@ const getLivePriceTool = tool(
                 `\n📈 [Price Tool] Fetching: ${resolvedTicker}`
             );
 
-            const data = await yahooFinance.quote(
-                resolvedTicker
-            );
+            let data = null;
+            try {
+                data = await yahooFinance.quote(
+                    resolvedTicker
+                );
+            } catch (quoteErr) {
+                console.warn(`[Price Tool] yahooFinance.quote failed for ${resolvedTicker}, falling back to chart API:`, quoteErr?.message);
+            }
+
+            // Direct chart API fallback (does not require cookie/crumb, never blocked on cloud)
+            if (!data || safeNumber(data?.regularMarketPrice) === null) {
+                try {
+                    const chartRes = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(resolvedTicker)}?interval=1d&range=1d`);
+                    const chartData = await chartRes.json();
+                    const meta = chartData?.chart?.result?.[0]?.meta;
+                    if (meta && safeNumber(meta?.regularMarketPrice) !== null) {
+                        data = {
+                            regularMarketPrice: meta.regularMarketPrice,
+                            currency: meta.currency,
+                            longName: meta.longName,
+                            shortName: meta.shortName,
+                            fullExchangeName: meta.fullExchangeName,
+                            exchange: meta.exchangeName,
+                            regularMarketPreviousClose: meta.chartPreviousClose,
+                            regularMarketDayHigh: meta.regularMarketDayHigh,
+                            regularMarketDayLow: meta.regularMarketDayLow,
+                            regularMarketTime: meta.regularMarketTime,
+                        };
+                    }
+                } catch (chartErr) {
+                    console.error(`[Price Tool] Chart fallback also failed for ${resolvedTicker}:`, chartErr?.message);
+                }
+            }
 
             const price = safeNumber(
                 data?.regularMarketPrice
@@ -451,8 +516,9 @@ const getFundamentalsTool = tool(
                 `\n📊 [Fundamentals Tool] Fetching: ${resolvedTicker}`
             );
 
-            const summary =
-                await yahooFinance.quoteSummary(
+            let summary = null;
+            try {
+                summary = await yahooFinance.quoteSummary(
                     resolvedTicker,
                     {
                         modules: [
@@ -464,6 +530,24 @@ const getFundamentalsTool = tool(
                         ],
                     }
                 );
+            } catch (summaryErr) {
+                console.warn(`[Fundamentals Tool] yahooFinance.quoteSummary failed for ${resolvedTicker}, attempting direct crumb fallback:`, summaryErr?.message);
+            }
+
+            // Direct crumb fallback if yahooFinance.quoteSummary failed
+            if (!summary) {
+                try {
+                    const { cookie, crumb } = await getDirectCrumb();
+                    const url = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(resolvedTicker)}?crumb=${encodeURIComponent(crumb)}&modules=price,summaryDetail,defaultKeyStatistics,financialData,assetProfile`;
+                    const dataRes = await fetch(url, {
+                        headers: { cookie, "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" }
+                    });
+                    const rawJson = await dataRes.json();
+                    summary = rawJson?.quoteSummary?.result?.[0] ?? null;
+                } catch (fallbackErr) {
+                    console.error(`[Fundamentals Tool] Direct crumb fallback failed for ${resolvedTicker}:`, fallbackErr?.message);
+                }
+            }
 
             const priceData =
                 summary?.price ?? {};
