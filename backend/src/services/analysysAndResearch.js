@@ -32,17 +32,19 @@ if (!process.env.TAVILY_API_KEY) {
 
 
 
+const BROWSER_HEADERS = {
+    "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    "Accept":
+        "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Referer": "https://finance.yahoo.com/",
+};
+
 const yahooFinance = new YahooFinance({
     suppressNotices: ["yahooSurvey"],
     fetchOptions: {
-        headers: {
-            "User-Agent":
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-            "Accept":
-                "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.9",
-            "Referer": "https://finance.yahoo.com/",
-        },
+        headers: BROWSER_HEADERS,
     },
 });
 
@@ -169,11 +171,14 @@ async function getDirectCrumb() {
     if (cachedCrumb && cachedCookie && now < crumbExpiresAt) {
         return { cookie: cachedCookie, crumb: cachedCrumb };
     }
-    const cookieRes = await fetch("https://fc.yahoo.com", { redirect: "manual" });
+    const cookieRes = await fetch("https://fc.yahoo.com", {
+        redirect: "manual",
+        headers: BROWSER_HEADERS,
+    });
     const cookie = cookieRes.headers.get("set-cookie");
     if (!cookie) throw new Error("Could not obtain session cookie from fc.yahoo.com");
     const crumbRes = await fetch("https://query1.finance.yahoo.com/v1/test/getcrumb", {
-        headers: { cookie, "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" }
+        headers: { ...BROWSER_HEADERS, cookie }
     });
     const crumb = await crumbRes.text();
     if (!crumb || crumb.includes("<html>")) throw new Error("Invalid crumb received from Yahoo: " + crumb);
@@ -226,7 +231,10 @@ async function resolveTicker(ticker, market) {
                 quotes = Array.isArray(result?.quotes) ? result.quotes : [];
             } catch (searchErr) {
                 try {
-                    const fallbackRes = await fetch(`https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=10&newsCount=0`);
+                    const fallbackRes = await fetch(
+                        `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=10&newsCount=0`,
+                        { headers: BROWSER_HEADERS }
+                    );
                     const fallbackData = await fallbackRes.json();
                     quotes = Array.isArray(fallbackData?.quotes) ? fallbackData.quotes : [];
                 } catch (e) {}
@@ -376,7 +384,10 @@ const getLivePriceTool = tool(
             // Direct chart API fallback (does not require cookie/crumb, never blocked on cloud)
             if (!data || safeNumber(data?.regularMarketPrice) === null) {
                 try {
-                    const chartRes = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(resolvedTicker)}?interval=1d&range=1d`);
+                    const chartRes = await fetch(
+                        `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(resolvedTicker)}?interval=1d&range=1d`,
+                        { headers: BROWSER_HEADERS }
+                    );
                     const chartData = await chartRes.json();
                     const meta = chartData?.chart?.result?.[0]?.meta;
                     if (meta && safeNumber(meta?.regularMarketPrice) !== null) {
@@ -540,7 +551,7 @@ const getFundamentalsTool = tool(
                     const { cookie, crumb } = await getDirectCrumb();
                     const url = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(resolvedTicker)}?crumb=${encodeURIComponent(crumb)}&modules=price,summaryDetail,defaultKeyStatistics,financialData,assetProfile`;
                     const dataRes = await fetch(url, {
-                        headers: { cookie, "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" }
+                        headers: { ...BROWSER_HEADERS, cookie }
                     });
                     const rawJson = await dataRes.json();
                     summary = rawJson?.quoteSummary?.result?.[0] ?? null;

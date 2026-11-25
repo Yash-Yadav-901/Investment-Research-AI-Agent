@@ -2,17 +2,19 @@ import YahooFinance from "yahoo-finance2";
 import { redisClient } from "../../redis/index.js";
 import { ApiError } from "../utils/api_error.js";
 
+const BROWSER_HEADERS = {
+    "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    "Accept":
+        "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Referer": "https://finance.yahoo.com/",
+};
+
 const yahooFinance = new YahooFinance({
     suppressNotices: ["yahooSurvey"],
     fetchOptions: {
-        headers: {
-            "User-Agent":
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-            "Accept":
-                "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.9",
-            "Referer": "https://finance.yahoo.com/",
-        },
+        headers: BROWSER_HEADERS,
     },
 });
 
@@ -85,7 +87,10 @@ async function resolveCompany(input) {
     } catch (err) {
         console.warn("[resolveCompany] yahooFinance.search failed, attempting direct search fallback:", err?.message);
         try {
-            const fallbackRes = await fetch(`https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(q)}&quotesCount=10&newsCount=0`);
+            const fallbackRes = await fetch(
+                `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(q)}&quotesCount=10&newsCount=0`,
+                { headers: BROWSER_HEADERS }
+            );
             searchResult = await fallbackRes.json();
         } catch (fallbackErr) {
             console.error("[resolveCompany] Direct search fallback also failed:", fallbackErr);
