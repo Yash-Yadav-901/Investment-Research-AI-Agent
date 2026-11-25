@@ -175,17 +175,78 @@ async function getDirectCrumb() {
         redirect: "manual",
         headers: BROWSER_HEADERS,
     });
-    const cookie = cookieRes.headers.get("set-cookie");
+    const rawCookie = cookieRes.headers.get("set-cookie") || "";
+    const cookie = rawCookie.split(";")[0].trim();
     if (!cookie) throw new Error("Could not obtain session cookie from fc.yahoo.com");
+
     const crumbRes = await fetch("https://query1.finance.yahoo.com/v1/test/getcrumb", {
         headers: { ...BROWSER_HEADERS, cookie }
     });
+    if (!crumbRes.ok) {
+        throw new Error(`getcrumb returned HTTP ${crumbRes.status}`);
+    }
     const crumb = await crumbRes.text();
-    if (!crumb || crumb.includes("<html>")) throw new Error("Invalid crumb received from Yahoo: " + crumb);
+    if (!crumb || crumb.includes("<html>") || crumb.includes("Unauthorized")) {
+        throw new Error("Invalid crumb received from Yahoo: " + crumb);
+    }
     cachedCookie = cookie;
     cachedCrumb = crumb;
     crumbExpiresAt = now + 60 * 60 * 1000;
     return { cookie, crumb };
+}
+
+function parseMarketCapString(str) {
+    if (!str) return null;
+    const cleaned = String(str).replace(/,/g, "").trim();
+    const match = cleaned.match(/^([0-9.]+)\s*([TCBMK]?)/i);
+    if (!match) return null;
+    const num = parseFloat(match[1]);
+    const multiplier = (match[2] || "").toUpperCase();
+    if (multiplier === "T") return num * 1e12;
+    if (multiplier === "B") return num * 1e9;
+    if (multiplier === "M") return num * 1e6;
+    if (multiplier === "K") return num * 1e3;
+    return num;
+}
+
+async function fetchGoogleFinanceFundamentals(ticker, market) {
+    try {
+        const cleanTicker = ticker.replace(/\.(NS|BO)$/i, "").trim();
+        const exch = market === "INDIAN" ? (ticker.endsWith(".BO") ? "BOM" : "NSE") : "";
+        const urls = [];
+        if (exch) {
+            urls.push(`https://www.google.com/finance/quote/${cleanTicker}:${exch}`);
+        } else {
+            urls.push(`https://www.google.com/finance/quote/${cleanTicker}:NASDAQ`);
+            urls.push(`https://www.google.com/finance/quote/${cleanTicker}:NYSE`);
+            urls.push(`https://www.google.com/finance/quote/${cleanTicker}`);
+        }
+
+        for (const url of urls) {
+            const res = await fetch(url, { headers: BROWSER_HEADERS });
+            if (!res.ok) continue;
+            const html = await res.text();
+            if (html.includes("did not match any documents") || html.length < 5000) continue;
+
+            const peMatch = html.match(/P\/E ratio[\s\S]*?<div[^>]*class="[^"]*P6K39c[^"]*"[^>]*>([^<]+)<\/div>/i) ||
+                            html.match(/P\/E ratio[\s\S]*?<div[^>]*>([0-9.,]+)<\/div>/i);
+            const mcapMatch = html.match(/Market cap[\s\S]*?<div[^>]*class="[^"]*P6K39c[^"]*"[^>]*>([^<]+)<\/div>/i) ||
+                              html.match(/Market cap[\s\S]*?<div[^>]*>([0-9.,]+[A-Za-z\s]+)<\/div>/i);
+
+            const peRatio = peMatch ? parseFloat(peMatch[1].replace(/,/g, "")) : null;
+            const marketCap = mcapMatch ? parseMarketCapString(mcapMatch[1]) : null;
+
+            if (peRatio !== null || marketCap !== null) {
+                return {
+                    peRatio: Number.isFinite(peRatio) ? peRatio : null,
+                    marketCap: Number.isFinite(marketCap) ? marketCap : null,
+                };
+            }
+        }
+    } catch (err) {
+        console.warn(`[Google Finance Fallback] Failed for ${ticker}:`, err?.message);
+    }
+    return null;
 }
 
 async function resolveTicker(ticker, market) {
@@ -553,10 +614,28 @@ const getFundamentalsTool = tool(
                     const dataRes = await fetch(url, {
                         headers: { ...BROWSER_HEADERS, cookie }
                     });
+                    if (dataRes.status === 401) {
+                        cachedCrumb = null;
+                        cachedCookie = null;
+                        crumbExpiresAt = 0;
+                    }
                     const rawJson = await dataRes.json();
                     summary = rawJson?.quoteSummary?.result?.[0] ?? null;
                 } catch (fallbackErr) {
                     console.error(`[Fundamentals Tool] Direct crumb fallback failed for ${resolvedTicker}:`, fallbackErr?.message);
+                }
+            }
+
+            // Google Finance fallback if Yahoo returned no summary on cloud deployment
+            let gfData = null;
+            if (!summary) {
+                try {
+                    gfData = await fetchGoogleFinanceFundamentals(resolvedTicker, market);
+                    if (gfData) {
+                        console.log(`[Fundamentals Tool] Retrieved fundamentals from Google Finance for ${resolvedTicker}:`, gfData);
+                    }
+                } catch (gfErr) {
+                    console.warn(`[Fundamentals Tool] Google Finance fallback failed for ${resolvedTicker}:`, gfErr?.message);
                 }
             }
 
@@ -585,7 +664,9 @@ const getFundamentalsTool = tool(
                 ) ??
                 safeNumber(
                     keyStats?.trailingPE
-                );
+                ) ??
+                gfData?.peRatio ??
+                null;
 
             const forwardPE =
                 safeNumber(
@@ -606,7 +687,9 @@ const getFundamentalsTool = tool(
                 ) ??
                 safeNumber(
                     summaryDetail?.marketCap
-                );
+                ) ??
+                gfData?.marketCap ??
+                null;
 
             const profitMargins =
                 safeNumber(
@@ -676,11 +759,11 @@ const getFundamentalsTool = tool(
                     ) ??
                     safeString(
                         priceData?.shortName
-                    ),
+                    ) ?? null,
 
                 currency: safeString(
                     priceData?.currency
-                ),
+                ) ?? (market === "INDIAN" ? "INR" : "USD"),
 
                 metrics: {
                     peRatio,
@@ -715,7 +798,7 @@ const getFundamentalsTool = tool(
                     )?.slice(0, 300) ?? null,
                 },
 
-                source: "Yahoo Finance",
+                source: summary ? "Yahoo Finance" : (gfData ? "Google Finance" : "Yahoo Finance"),
 
                 note:
                     "Null values mean the source did not provide that metric. No values were fabricated.",
