@@ -8,6 +8,7 @@ import { tool } from "@langchain/core/tools";
 import YahooFinance from "yahoo-finance2";
 import { tavily } from "@tavily/core";
 import { z } from "zod";
+import { redisClient } from "../../redis/index.js";
 import "dotenv/config";
 
 
@@ -224,9 +225,47 @@ function parseFinancialNumber(str) {
     return num;
 }
 
+function enforceSanityBounds(metrics) {
+    if (!metrics) return null;
+    const peRatio = safeNumber(metrics.peRatio);
+    const forwardPE = safeNumber(metrics.forwardPE);
+    const debtToEquity = safeNumber(metrics.debtToEquity);
+    const marketCap = safeNumber(metrics.marketCap);
+    const profitMargins = safeNumber(metrics.profitMargins);
+    const returnOnEquity = safeNumber(metrics.returnOnEquity);
+    const revenueGrowth = safeNumber(metrics.revenueGrowth);
+    const earningsGrowth = safeNumber(metrics.earningsGrowth);
+
+    return {
+        ...metrics,
+        peRatio: (peRatio !== null && peRatio >= 0 && peRatio <= 500) ? peRatio : null,
+        forwardPE: (forwardPE !== null && forwardPE >= 0 && forwardPE <= 500) ? forwardPE : null,
+        debtToEquity, // Yahoo unit preserved (percentage, e.g. 9.83 for 0.0983)
+        marketCap: (marketCap !== null && marketCap > 0) ? marketCap : null,
+        profitMargins: (profitMargins !== null && profitMargins >= -1 && profitMargins <= 5) ? profitMargins : null,
+        returnOnEquity: (returnOnEquity !== null && returnOnEquity >= -1 && returnOnEquity <= 5) ? returnOnEquity : null,
+        revenueGrowth: (revenueGrowth !== null && revenueGrowth >= -1 && revenueGrowth <= 5) ? revenueGrowth : null,
+        earningsGrowth: (earningsGrowth !== null && earningsGrowth >= -1 && earningsGrowth <= 5) ? earningsGrowth : null,
+    };
+}
+
 async function fetchGoogleFinanceFundamentals(ticker, market) {
+    const cleanTicker = ticker.replace(/\.(NS|BO)$/i, "").trim();
+    const cacheKey = `fundamentals:fallback:${ticker.toUpperCase()}`;
+
+    // Redis cache lookup (6 hours TTL)
     try {
-        const cleanTicker = ticker.replace(/\.(NS|BO)$/i, "").trim();
+        const cached = await redisClient.get(cacheKey);
+        if (cached) {
+            const parsed = JSON.parse(cached);
+            console.log(`[Fundamentals Fallback] Cache hit for ${ticker}`);
+            return enforceSanityBounds(parsed);
+        }
+    } catch (cacheErr) {
+        console.warn(`[Fundamentals Fallback] Redis read error for ${ticker}:`, cacheErr.message);
+    }
+
+    try {
         const exch = market === "INDIAN" ? (ticker.endsWith(".BO") ? "BOM" : "NSE") : "";
         const urls = [];
         if (exch) {
@@ -237,9 +276,21 @@ async function fetchGoogleFinanceFundamentals(ticker, market) {
             urls.push(`https://www.google.com/finance/quote/${cleanTicker}`);
         }
 
+        let peRatio = null;
+        let marketCap = null;
+        let profitMargins = null;
+        let revenueGrowth = null;
+        let earningsGrowth = null;
+        let returnOnEquity = null;
+        let debtToEquity = null;
+
         for (const url of urls) {
             try {
-                const res = await fetch(url, { headers: BROWSER_HEADERS });
+                // 5-second timeout per request
+                const res = await fetch(url, {
+                    headers: BROWSER_HEADERS,
+                    signal: AbortSignal.timeout(5000),
+                });
                 if (!res.ok) continue;
                 const html = await res.text();
                 if (html.includes("did not match any documents") || html.length < 5000) continue;
@@ -249,94 +300,139 @@ async function fetchGoogleFinanceFundamentals(ticker, market) {
                 const mcapMatch = html.match(/Market cap[\s\S]*?<div[^>]*class="[^"]*P6K39c[^"]*"[^>]*>([^<]+)<\/div>/i) ||
                                   html.match(/Market cap[\s\S]*?<div[^>]*>([0-9.,]+[A-Za-z\s]+)<\/div>/i);
 
-                const peRatio = peMatch ? parseFloat(peMatch[1].replace(/,/g, "")) : null;
-                const marketCap = mcapMatch ? parseMarketCapString(mcapMatch[1]) : null;
+                if (peMatch && peRatio === null) {
+                    const parsedPE = parseFloat(peMatch[1].replace(/,/g, ""));
+                    if (Number.isFinite(parsedPE)) {
+                        peRatio = parsedPE;
+                        console.log(`[Fundamentals Fallback] ${ticker} peRatio: ${peRatio} (derived from Google Finance P/E ratio tag)`);
+                    }
+                }
 
-                let profitMargins = null;
-                let revenueGrowth = null;
-                let earningsGrowth = null;
+                if (mcapMatch && marketCap === null) {
+                    const parsedMcap = parseMarketCapString(mcapMatch[1]);
+                    if (Number.isFinite(parsedMcap)) {
+                        marketCap = parsedMcap;
+                        console.log(`[Fundamentals Fallback] ${ticker} marketCap: ${marketCap} (derived from Google Finance Market cap tag)`);
+                    }
+                }
 
                 const trMatches = [...html.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/g)];
                 for (const m of trMatches) {
                     const row = m[1];
-                    if (row.includes("Net profit margin")) {
+                    if (row.includes("Net profit margin") && profitMargins === null) {
                         const vals = [...row.matchAll(/<div class="CNzF7d">([^<]+)<\/div>/g)].map(x => x[1].trim());
                         if (vals.length > 0) {
                             const latestVal = parseFinancialNumber(vals[vals.length - 1]);
-                            if (latestVal !== null) profitMargins = latestVal;
-                        }
-                    }
-                    if (row.includes("Revenue") && !row.includes("Cost of revenue")) {
-                        const vals = [...row.matchAll(/<div class="CNzF7d">([^<]+)<\/div>/g)].map(x => x[1].trim());
-                        if (vals.length >= 2) {
-                            const first = parseFinancialNumber(vals[0]);
-                            const last = parseFinancialNumber(vals[vals.length - 1]);
-                            if (first && last && first > 0) {
-                                revenueGrowth = Number(((last - first) / first).toFixed(4));
-                            }
-                        }
-                    }
-                    if (row.includes("Net income") && !row.includes("Other")) {
-                        const vals = [...row.matchAll(/<div class="CNzF7d">([^<]+)<\/div>/g)].map(x => x[1].trim());
-                        if (vals.length >= 2) {
-                            const first = parseFinancialNumber(vals[0]);
-                            const last = parseFinancialNumber(vals[vals.length - 1]);
-                            if (first && last && Math.abs(first) > 0) {
-                                earningsGrowth = Number(((last - first) / Math.abs(first)).toFixed(4));
+                            if (latestVal !== null) {
+                                profitMargins = latestVal;
+                                console.log(`[Fundamentals Fallback] ${ticker} profitMargins: ${profitMargins} (derived from Google Finance Net profit margin row)`);
                             }
                         }
                     }
                 }
 
-                if (peRatio === null && marketCap === null && profitMargins === null) {
-                    continue;
+                if (peRatio !== null || marketCap !== null || profitMargins !== null) {
+                    break;
                 }
-
-                // If Indian stock, supplement with Screener for ROE, Debt/Equity, and domestic Market Cap
-                let returnOnEquity = null;
-                let debtToEquity = null;
-                let screenerMarketCap = null;
-                if (market === "INDIAN") {
-                    try {
-                        const scRes = await fetch(`https://www.screener.in/company/${cleanTicker}/consolidated/`, { headers: BROWSER_HEADERS });
-                        const scHtml = scRes.ok ? await scRes.text() : "";
-                        if (scHtml) {
-                            const roeMatch = scHtml.match(/ROE[\s\S]*?<span class="number">([^<]+)<\/span>/i);
-                            if (roeMatch) {
-                                const val = parseFloat(roeMatch[1].replace(/,/g, ""));
-                                if (Number.isFinite(val)) returnOnEquity = Number((val / 100).toFixed(4));
-                            }
-                            const scMcap = scHtml.match(/Market Cap[\s\S]*?<span class="number">([^<]+)<\/span>/i);
-                            if (scMcap) {
-                                const valCr = parseFloat(scMcap[1].replace(/,/g, ""));
-                                if (Number.isFinite(valCr)) screenerMarketCap = valCr * 1e7;
-                            }
-                            const bMatch = scHtml.match(/Borrowings[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>/i);
-                            const rMatch = scHtml.match(/Reserves[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>/i);
-                            const bVal = bMatch ? parseFloat(bMatch[1].replace(/<[^>]+>/g, "").replace(/,/g, "").trim()) : null;
-                            const rVal = rMatch ? parseFloat(rMatch[1].replace(/<[^>]+>/g, "").replace(/,/g, "").trim()) : null;
-                            if (Number.isFinite(bVal) && Number.isFinite(rVal) && rVal > 0) {
-                                // Scale as percentage to match Yahoo's debtToEquity convention
-                                debtToEquity = Number(((bVal / rVal) * 100).toFixed(2));
-                            }
-                        }
-                    } catch (scErr) {}
-                }
-
-                return {
-                    peRatio: Number.isFinite(peRatio) ? peRatio : null,
-                    marketCap: Number.isFinite(screenerMarketCap) ? screenerMarketCap : (Number.isFinite(marketCap) ? marketCap : null),
-                    profitMargins: Number.isFinite(profitMargins) ? profitMargins : null,
-                    revenueGrowth: Number.isFinite(revenueGrowth) ? revenueGrowth : null,
-                    earningsGrowth: Number.isFinite(earningsGrowth) ? earningsGrowth : null,
-                    returnOnEquity: Number.isFinite(returnOnEquity) ? returnOnEquity : null,
-                    debtToEquity: Number.isFinite(debtToEquity) ? debtToEquity : null,
-                    source: "Google Finance / Screener",
-                };
             } catch (urlErr) {
+                console.warn(`[Fundamentals Fallback] Google Finance fetch timeout/error for ${url}:`, urlErr.message);
                 continue;
             }
         }
+
+        // For Indian stocks, derive ROE, Debt-to-Equity, and Annual YoY Growth from Screener
+        if (market === "INDIAN") {
+            try {
+                // 5-second timeout per request
+                const scRes = await fetch(`https://www.screener.in/company/${cleanTicker}/consolidated/`, {
+                    headers: BROWSER_HEADERS,
+                    signal: AbortSignal.timeout(5000),
+                });
+                const scHtml = scRes.ok ? await scRes.text() : "";
+                if (scHtml) {
+                    const roeMatch = scHtml.match(/ROE[\s\S]*?<span class="number">([^<]+)<\/span>/i);
+                    if (roeMatch) {
+                        const val = parseFloat(roeMatch[1].replace(/,/g, ""));
+                        if (Number.isFinite(val)) {
+                            returnOnEquity = Number((val / 100).toFixed(4));
+                            console.log(`[Fundamentals Fallback] ${ticker} returnOnEquity: ${returnOnEquity} (derived from Screener ROE ${val}%)`);
+                        }
+                    }
+
+                    const scMcap = scHtml.match(/Market Cap[\s\S]*?<span class="number">([^<]+)<\/span>/i);
+                    if (scMcap) {
+                        const valCr = parseFloat(scMcap[1].replace(/,/g, ""));
+                        if (Number.isFinite(valCr)) {
+                            marketCap = valCr * 1e7;
+                            console.log(`[Fundamentals Fallback] ${ticker} marketCap: ${marketCap} (derived from Screener Market Cap ₹${valCr} Cr)`);
+                        }
+                    }
+
+                    // debtToEquity is set to null in fallback (borrowings divided by reserves is not Yahoo's definition)
+                    debtToEquity = null;
+
+                    // Growth: only fill revenueGrowth/earningsGrowth if both periods are the same period type (YoY)
+                    const plSection = scHtml.match(/<section id="profit-loss"[\s\S]*?<\/section>/i);
+                    if (plSection) {
+                        const rows = [...plSection[0].matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/g)];
+                        for (const r of rows) {
+                            const text = r[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+                            const parts = text.split(" ").map(p => p.replace(/,/g, "")).filter(p => /^-?\d+(\.\d+)?$/.test(p)).map(Number);
+                            if (text.startsWith("Sales") && parts.length >= 2 && revenueGrowth === null) {
+                                const prev = parts[parts.length - 2];
+                                const curr = parts[parts.length - 1];
+                                if (prev > 0) {
+                                    revenueGrowth = Number(((curr - prev) / prev).toFixed(4));
+                                    console.log(`[Fundamentals Fallback] ${ticker} revenueGrowth: ${revenueGrowth} (derived from Screener Annual P&L: (${curr} - ${prev}) / ${prev} YoY)`);
+                                }
+                            }
+                            if (text.startsWith("Net Profit") && parts.length >= 2 && earningsGrowth === null) {
+                                const prev = parts[parts.length - 2];
+                                const curr = parts[parts.length - 1];
+                                if (Math.abs(prev) > 0) {
+                                    earningsGrowth = Number(((curr - prev) / Math.abs(prev)).toFixed(4));
+                                    console.log(`[Fundamentals Fallback] ${ticker} earningsGrowth: ${earningsGrowth} (derived from Screener Annual P&L: (${curr} - ${prev}) / ${prev} YoY)`);
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (scErr) {
+                console.warn(`[Fundamentals Fallback] Screener fetch timeout/error for ${cleanTicker}:`, scErr.message);
+            }
+        }
+
+        if (revenueGrowth === null) {
+            console.log(`[Fundamentals Fallback] ${ticker} revenueGrowth: null (no verified matching YoY period)`);
+        }
+        if (earningsGrowth === null) {
+            console.log(`[Fundamentals Fallback] ${ticker} earningsGrowth: null (no verified matching YoY period)`);
+        }
+
+        const rawFallback = {
+            peRatio,
+            marketCap,
+            profitMargins,
+            revenueGrowth,
+            earningsGrowth,
+            returnOnEquity,
+            debtToEquity,
+            source: "Google Finance / Screener (fallback)",
+        };
+
+        const result = enforceSanityBounds(rawFallback);
+
+        // Cache fallback results in Redis for 6 hours per ticker
+        if (result && Object.values(result).some(v => v !== null)) {
+            try {
+                await redisClient.set(cacheKey, JSON.stringify(result), { EX: 6 * 60 * 60 });
+                console.log(`[Fundamentals Fallback] Cached results in Redis for ${ticker} (TTL 6h)`);
+            } catch (cacheErr) {
+                console.warn(`[Fundamentals Fallback] Redis write error for ${ticker}:`, cacheErr.message);
+            }
+        }
+
+        return result;
     } catch (err) {
         console.warn(`[Google Finance Fallback] Failed for ${ticker}:`, err?.message);
     }
@@ -838,15 +934,62 @@ const getFundamentalsTool = tool(
                     financialData?.freeCashflow
                 );
 
+            // Determine provenance: check if ANY metric value was populated from the fallback
+            const isFallbackUsed = Boolean(
+                (!summary && gfData) ||
+                (gfData && (
+                    (safeNumber(summaryDetail?.trailingPE) === null && safeNumber(keyStats?.trailingPE) === null && gfData?.peRatio !== null) ||
+                    (safeNumber(priceData?.marketCap) === null && safeNumber(summaryDetail?.marketCap) === null && gfData?.marketCap !== null) ||
+                    (safeNumber(keyStats?.profitMargins) === null && safeNumber(financialData?.profitMargins) === null && gfData?.profitMargins !== null) ||
+                    (safeNumber(financialData?.returnOnEquity) === null && gfData?.returnOnEquity !== null) ||
+                    (safeNumber(financialData?.revenueGrowth) === null && gfData?.revenueGrowth !== null) ||
+                    (safeNumber(financialData?.earningsGrowth) === null && gfData?.earningsGrowth !== null) ||
+                    (safeNumber(financialData?.debtToEquity) === null && gfData?.debtToEquity !== null)
+                ))
+            );
+
+            const fundamentalsSource = isFallbackUsed
+                ? "Google Finance / Screener (fallback)"
+                : "Yahoo Finance";
+
+            // Growth basis: "annual FY YoY" when growth comes from fallback, "latest quarter YoY" when from Yahoo
+            const isGrowthFromFallback = Boolean(
+                (!summary && (gfData?.revenueGrowth !== null || gfData?.earningsGrowth !== null)) ||
+                (gfData && (
+                    (safeNumber(financialData?.revenueGrowth) === null && gfData?.revenueGrowth !== null) ||
+                    (safeNumber(financialData?.earningsGrowth) === null && gfData?.earningsGrowth !== null)
+                ))
+            );
+
+            const growthBasis = isGrowthFromFallback
+                ? "annual FY YoY"
+                : "latest quarter YoY";
+
+            // Enforce sanity bounds on final combined metrics
+            const sanitizedMetrics = enforceSanityBounds({
+                peRatio,
+                forwardPE,
+                debtToEquity,
+                marketCap,
+                profitMargins,
+                returnOnEquity,
+                revenueGrowth,
+                earningsGrowth,
+                currentRatio,
+                totalDebt,
+                totalCash,
+                freeCashflow,
+            });
+
             const hasAnyFundamental =
-                peRatio !== null ||
-                forwardPE !== null ||
-                debtToEquity !== null ||
-                marketCap !== null ||
-                profitMargins !== null ||
-                returnOnEquity !== null ||
-                revenueGrowth !== null ||
-                earningsGrowth !== null;
+                sanitizedMetrics.peRatio !== null ||
+                sanitizedMetrics.forwardPE !== null ||
+                sanitizedMetrics.debtToEquity !== null ||
+                sanitizedMetrics.marketCap !== null ||
+                sanitizedMetrics.profitMargins !== null ||
+                sanitizedMetrics.returnOnEquity !== null ||
+                sanitizedMetrics.revenueGrowth !== null ||
+                sanitizedMetrics.earningsGrowth !== null;
 
             return JSON.stringify({
                 status: hasAnyFundamental
@@ -869,20 +1012,7 @@ const getFundamentalsTool = tool(
                     priceData?.currency
                 ) ?? (market === "INDIAN" ? "INR" : "USD"),
 
-                metrics: {
-                    peRatio,
-                    forwardPE,
-                    debtToEquity,
-                    marketCap,
-                    profitMargins,
-                    returnOnEquity,
-                    revenueGrowth,
-                    earningsGrowth,
-                    currentRatio,
-                    totalDebt,
-                    totalCash,
-                    freeCashflow,
-                },
+                metrics: sanitizedMetrics,
 
                 companyProfile: {
                     sector: safeString(
@@ -902,7 +1032,9 @@ const getFundamentalsTool = tool(
                     )?.slice(0, 300) ?? null,
                 },
 
-                source: summary ? "Yahoo Finance" : (gfData ? "Google Finance" : "Yahoo Finance"),
+                growthBasis,
+                fundamentalsSource,
+                source: fundamentalsSource,
 
                 note:
                     "Null values mean the source did not provide that metric. No values were fabricated.",
@@ -1685,4 +1817,17 @@ Never fabricate unavailable information.
     }
 }
 
-export { researchAndAnalysis, baseModel, getLivePriceTool, getFundamentalsTool, getWebNewsTool, InvestmentReportSchema, resolveTicker, RateLimitError, explainModelError, getRetryDelayMs };
+export {
+    researchAndAnalysis,
+    baseModel,
+    getLivePriceTool,
+    getFundamentalsTool,
+    getWebNewsTool,
+    InvestmentReportSchema,
+    resolveTicker,
+    RateLimitError,
+    explainModelError,
+    getRetryDelayMs,
+    fetchGoogleFinanceFundamentals,
+    enforceSanityBounds
+};

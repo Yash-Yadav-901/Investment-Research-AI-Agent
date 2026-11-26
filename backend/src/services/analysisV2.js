@@ -194,6 +194,8 @@ const analystModel = new ChatGroq({
 function compactData({ cls, data, mismatch }) {
     const f = data.fundamentals;
     const p = data.price;
+    const fundamentalsSource = f?.fundamentalsSource ?? f?.source ?? "Yahoo Finance";
+    const growthBasis = f?.growthBasis ?? (fundamentalsSource.includes("fallback") ? "annual FY YoY" : "latest quarter YoY");
     const news = (data.news?.results ?? []).slice(0, 5).map((n) => ({
         title: n.title,
         url: n.url,
@@ -216,6 +218,8 @@ function compactData({ cls, data, mismatch }) {
         price: mismatch ? null : p?.price ?? null,
         currency: mismatch ? null : p?.currency ?? f?.currency ?? null,
         metrics,
+        fundamentalsSource,
+        growthBasis,
         profile: mismatch
             ? null
             : {
@@ -245,7 +249,8 @@ Rules:
 - recentNews: only items from the provided news list (copy url exactly), headline + 1 sentence summary.
 - decisionAnalysis: valuation, financialHealth, growth, newsSentiment, risk, finalDecisionReason - short, evidence-linked.
   If a metric is null, say it cannot be assessed.
-- evidenceUsed: each item = claim, exact evidence (a metric value or news title), source ("Yahoo Finance" or "Tavily").
+- evidenceUsed: each item = claim, exact evidence (a metric value or news title), source ("Yahoo Finance", "Google Finance / Screener (fallback)", or "Tavily"). Use "Google Finance / Screener (fallback)" if the fundamentals came from the fallback source.
+- If growthBasis is annual, say the growth is annual (last fiscal year) and do not describe it as recent.
 - If private, companySummary must say: "${cls.cleanName} is a privately held company. No public financial data is available."
 - Do not compare against sector averages, peers or history unless that comparison is in the data.
 - Do not claim certainty about future returns.`;
@@ -296,6 +301,18 @@ function assemble({ cls, data, mismatch, validationLimitations, analysis }) {
     if (useNumbers && !priceAvailable) limitations.push("Live price unavailable from Yahoo Finance.");
     if (useNumbers && !fundamentalsAvailable) limitations.push("Fundamentals unavailable or partial from Yahoo Finance.");
     if (!newsAvailable) limitations.push("Recent news unavailable.");
+    const isFallbackFundamentals =
+        f?.fundamentalsSource === "Google Finance / Screener (fallback)" ||
+        f?.source === "Google Finance / Screener (fallback)";
+    if (useNumbers && fundamentalsAvailable && isFallbackFundamentals) {
+        limitations.push("Some fundamentals come from a fallback source and may differ from Yahoo definitions.");
+    }
+    const isAnnualGrowth =
+        f?.growthBasis === "annual FY YoY" ||
+        (typeof f?.growthBasis === "string" && f.growthBasis.toLowerCase().includes("annual"));
+    if (useNumbers && fundamentalsAvailable && isAnnualGrowth) {
+        limitations.push("Growth figures are annual (last fiscal year) because the primary source was unavailable.");
+    }
 
     // anti-hallucination: keep only URLs that were really returned by the news tool
     const realUrls = new Set(newsResults.map((n) => n.url).filter(Boolean));
