@@ -297,7 +297,33 @@ function assemble({ cls, data, mismatch, validationLimitations, analysis }) {
     const newsAvailable = data.news?.status === "SUCCESS" && newsResults.length > 0;
 
     const limitations = [...validationLimitations];
-    if (isPrivate) limitations.push("Company is privately held — no public financial data available.");
+    const firstWordMatch = String(cls.cleanName || "")
+        .toLowerCase()
+        .replace(/&/g, " and ")
+        .replace(/[^a-z0-9]+/g, " ")
+        .split(" ")
+        .find((w) => w.length > 1 && !STOP_WORDS.has(w));
+    const firstWordRegex = firstWordMatch ? new RegExp(`\\b${firstWordMatch}\\b`, "i") : null;
+
+    const newsSuggestsPublic = isPrivate && newsResults.some((n) => {
+        const title = n?.title ?? "";
+        const snippet = String(n?.content ?? "").slice(0, 200);
+        const hasExchangeTicker = (text) => /\b(NSE|BSE|NASDAQ|NYSE):\s*[A-Za-z0-9&-]+/i.test(text);
+
+        if (firstWordRegex) {
+            return (
+                (hasExchangeTicker(title) && firstWordRegex.test(title)) ||
+                (hasExchangeTicker(snippet) && firstWordRegex.test(snippet))
+            );
+        }
+        return hasExchangeTicker(title) || hasExchangeTicker(snippet);
+    });
+
+    if (newsSuggestsPublic) {
+        limitations.push("News suggests this company may be publicly listed; the ticker could not be verified.");
+    } else if (isPrivate) {
+        limitations.push("Company is privately held — no public financial data available.");
+    }
     if (useNumbers && !priceAvailable) limitations.push("Live price unavailable from Yahoo Finance.");
     if (useNumbers && !fundamentalsAvailable) limitations.push("Fundamentals unavailable or partial from Yahoo Finance.");
     if (!newsAvailable) limitations.push("Recent news unavailable.");
@@ -337,10 +363,12 @@ function assemble({ cls, data, mismatch, validationLimitations, analysis }) {
 
     return {
         metadata: {
-            ticker: isPrivate ? "PRIVATE" : mismatch ? data.ticker : data.ticker,
+            ticker: isPrivate ? (newsSuggestsPublic ? "UNKNOWN" : "PRIVATE") : mismatch ? data.ticker : data.ticker,
             companyName: p?.companyName ?? f?.companyName ?? cls.cleanName,
-            marketType: isPrivate ? "PRIVATE" : cls.market,
-            companySummary: analysis.companySummary,
+            marketType: isPrivate ? (newsSuggestsPublic ? cls.market : "PRIVATE") : cls.market,
+            companySummary: newsSuggestsPublic
+                ? `${p?.companyName ?? f?.companyName ?? cls.cleanName} may be publicly listed, but its ticker could not be verified. Treat this report as unverified.`
+                : analysis.companySummary,
         },
         verdict: { decision, confidenceScore: Math.max(0, Math.min(100, confidence)) },
         financialMetrics,

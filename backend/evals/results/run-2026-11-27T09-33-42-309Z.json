@@ -1,0 +1,1038 @@
+{
+  "meta": {
+    "date": "2026-11-27",
+    "model": "openai/gpt-oss-120b",
+    "dryRun": false
+  },
+  "summary": {
+    "resolve": {
+      "scoredCases": 30,
+      "errors": 1,
+      "passed": 25,
+      "accuracy": 83.3,
+      "statusAccuracy": 86.7,
+      "tickerAccuracy": 100,
+      "tickerChecks": 18,
+      "collisionDetection": 40,
+      "collisionChecks": 5,
+      "falsePopupRate": 5.3,
+      "missedCollisions": 2,
+      "byCategory": {
+        "india-single": {
+          "total": 8,
+          "passed": 8
+        },
+        "global-single": {
+          "total": 7,
+          "passed": 6
+        },
+        "brand-name": {
+          "total": 1,
+          "passed": 1
+        },
+        "ambiguous-name": {
+          "total": 3,
+          "passed": 2
+        },
+        "ticker-collision": {
+          "total": 2,
+          "passed": 0
+        },
+        "explicit-ticker": {
+          "total": 4,
+          "passed": 4
+        },
+        "private": {
+          "total": 4,
+          "passed": 3
+        },
+        "fake": {
+          "total": 1,
+          "passed": 1
+        }
+      }
+    },
+    "pipeline": {
+      "runs": 11,
+      "successRate": 100,
+      "schemaValidRate": 100,
+      "passRate": 100,
+      "privateGuardrails": {
+        "runs": 2,
+        "passed": 2
+      },
+      "avgMetricsFilled": 5.9,
+      "publicRuns": 8,
+      "latencySec": {
+        "mean": 6.8,
+        "median": 6.6,
+        "p95": 12
+      },
+      "stability": null
+    }
+  },
+  "resolveRows": [
+    {
+      "id": "in-tcs",
+      "input": "TCS",
+      "category": "india-single",
+      "scored": true,
+      "expected": "SINGLE",
+      "got": "ERROR",
+      "tickerGot": null,
+      "candidatesGot": null,
+      "checks": {
+        "status": false
+      },
+      "pass": false,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": [
+        "status"
+      ]
+    },
+    {
+      "id": "in-infosys",
+      "input": "Infosys",
+      "category": "india-single",
+      "scored": true,
+      "expected": "SINGLE",
+      "got": "SINGLE",
+      "tickerGot": "INFY.NS",
+      "candidatesGot": null,
+      "checks": {
+        "status": true,
+        "ticker": true
+      },
+      "pass": true,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": []
+    },
+    {
+      "id": "in-wipro",
+      "input": "Wipro",
+      "category": "india-single",
+      "scored": true,
+      "expected": "SINGLE",
+      "got": "SINGLE",
+      "tickerGot": "WIPRO.NS",
+      "candidatesGot": null,
+      "checks": {
+        "status": true,
+        "ticker": true
+      },
+      "pass": true,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": []
+    },
+    {
+      "id": "in-hdfcbank",
+      "input": "HDFC Bank",
+      "category": "india-single",
+      "scored": true,
+      "expected": "SINGLE",
+      "got": "SINGLE",
+      "tickerGot": "HDFCBANK.NS",
+      "candidatesGot": null,
+      "checks": {
+        "status": true,
+        "ticker": true
+      },
+      "pass": true,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": []
+    },
+    {
+      "id": "in-reliance",
+      "input": "Reliance Industries",
+      "category": "india-single",
+      "scored": true,
+      "expected": "SINGLE",
+      "got": "SINGLE",
+      "tickerGot": "RELIANCE.NS",
+      "candidatesGot": null,
+      "checks": {
+        "status": true,
+        "ticker": true
+      },
+      "pass": true,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": []
+    },
+    {
+      "id": "in-lt",
+      "input": "Larsen & Toubro",
+      "category": "india-single",
+      "scored": true,
+      "expected": "SINGLE",
+      "got": "SINGLE",
+      "tickerGot": "LT.NS",
+      "candidatesGot": null,
+      "checks": {
+        "status": true,
+        "ticker": true
+      },
+      "pass": true,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": []
+    },
+    {
+      "id": "in-titan",
+      "input": "Titan Company",
+      "category": "india-single",
+      "scored": true,
+      "expected": "SINGLE",
+      "got": "SINGLE",
+      "tickerGot": "TITAN.NS",
+      "candidatesGot": null,
+      "checks": {
+        "status": true,
+        "ticker": true
+      },
+      "pass": true,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": []
+    },
+    {
+      "id": "in-asianpaints",
+      "input": "Asian Paints",
+      "category": "india-single",
+      "scored": true,
+      "expected": "SINGLE",
+      "got": "SINGLE",
+      "tickerGot": "ASIANPAINT.NS",
+      "candidatesGot": null,
+      "checks": {
+        "status": true,
+        "ticker": true
+      },
+      "pass": true,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": []
+    },
+    {
+      "id": "in-maruti",
+      "input": "Maruti Suzuki",
+      "category": "india-single",
+      "scored": true,
+      "expected": "SINGLE",
+      "got": "SINGLE",
+      "tickerGot": "MARUTI.NS",
+      "candidatesGot": null,
+      "checks": {
+        "status": true,
+        "ticker": true
+      },
+      "pass": true,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": []
+    },
+    {
+      "id": "gl-apple",
+      "input": "Apple",
+      "category": "global-single",
+      "scored": true,
+      "expected": "SINGLE",
+      "got": "SINGLE",
+      "tickerGot": "AAPL",
+      "candidatesGot": null,
+      "checks": {
+        "status": true,
+        "ticker": true
+      },
+      "pass": true,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": []
+    },
+    {
+      "id": "gl-msft",
+      "input": "Microsoft",
+      "category": "global-single",
+      "scored": true,
+      "expected": "SINGLE",
+      "got": "SINGLE",
+      "tickerGot": "MSFT",
+      "candidatesGot": null,
+      "checks": {
+        "status": true,
+        "ticker": true
+      },
+      "pass": true,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": []
+    },
+    {
+      "id": "gl-tsla",
+      "input": "Tesla",
+      "category": "global-single",
+      "scored": true,
+      "expected": "SINGLE",
+      "got": "SINGLE",
+      "tickerGot": "TSLA",
+      "candidatesGot": null,
+      "checks": {
+        "status": true,
+        "ticker": true
+      },
+      "pass": true,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": []
+    },
+    {
+      "id": "gl-nvda",
+      "input": "NVIDIA",
+      "category": "global-single",
+      "scored": true,
+      "expected": "SINGLE",
+      "got": "SINGLE",
+      "tickerGot": "NVDA",
+      "candidatesGot": null,
+      "checks": {
+        "status": true,
+        "ticker": true
+      },
+      "pass": true,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": []
+    },
+    {
+      "id": "gl-amzn",
+      "input": "Amazon",
+      "category": "global-single",
+      "scored": true,
+      "expected": "SINGLE",
+      "got": "SINGLE",
+      "tickerGot": "AMZN",
+      "candidatesGot": null,
+      "checks": {
+        "status": true,
+        "ticker": true
+      },
+      "pass": true,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": []
+    },
+    {
+      "id": "gl-nflx",
+      "input": "Netflix",
+      "category": "global-single",
+      "scored": true,
+      "expected": "SINGLE",
+      "got": "SINGLE",
+      "tickerGot": "NFLX",
+      "candidatesGot": null,
+      "checks": {
+        "status": true,
+        "ticker": true
+      },
+      "pass": true,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": []
+    },
+    {
+      "id": "gl-toyota",
+      "input": "Toyota",
+      "category": "global-single",
+      "scored": true,
+      "expected": "SINGLE",
+      "got": "MULTIPLE",
+      "tickerGot": null,
+      "candidatesGot": [
+        "TM",
+        "8015.T"
+      ],
+      "checks": {
+        "status": false
+      },
+      "pass": false,
+      "falsePopup": true,
+      "missedCollision": false,
+      "failed": [
+        "status"
+      ]
+    },
+    {
+      "id": "br-google",
+      "input": "Google",
+      "category": "brand-name",
+      "scored": true,
+      "expected": "NO_MATCH|SINGLE",
+      "got": "NO_MATCH",
+      "tickerGot": null,
+      "candidatesGot": null,
+      "checks": {
+        "status": true
+      },
+      "pass": true,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": []
+    },
+    {
+      "id": "am-tata",
+      "input": "Tata",
+      "category": "ambiguous-name",
+      "scored": true,
+      "expected": "MULTIPLE",
+      "got": "MULTIPLE",
+      "tickerGot": null,
+      "candidatesGot": [
+        "TCS.NS",
+        "TATASTEEL.NS",
+        "TATAPOWER.NS",
+        "TMCV.NS",
+        "TMPV.NS"
+      ],
+      "checks": {
+        "status": true,
+        "includes": true
+      },
+      "pass": true,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": []
+    },
+    {
+      "id": "am-mahindra",
+      "input": "Mahindra",
+      "category": "ambiguous-name",
+      "scored": true,
+      "expected": "MULTIPLE",
+      "got": "MULTIPLE",
+      "tickerGot": null,
+      "candidatesGot": [
+        "TECHM.NS",
+        "M&M.NS",
+        "KOTAKBANK.NS",
+        "M&MFIN.NS",
+        "MHRIL.NS"
+      ],
+      "checks": {
+        "status": true,
+        "includes": true
+      },
+      "pass": true,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": []
+    },
+    {
+      "id": "am-hdfc",
+      "input": "HDFC",
+      "category": "ambiguous-name",
+      "scored": true,
+      "expected": "MULTIPLE",
+      "got": "MULTIPLE",
+      "tickerGot": null,
+      "candidatesGot": [
+        "HDFCBANK.NS",
+        "HDFCLIFE.NS"
+      ],
+      "checks": {
+        "status": true,
+        "includes": false
+      },
+      "pass": false,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": [
+        "includes"
+      ]
+    },
+    {
+      "id": "co-ltm",
+      "input": "LTM",
+      "category": "ticker-collision",
+      "scored": true,
+      "expected": "MULTIPLE",
+      "got": "SINGLE",
+      "tickerGot": "LTM",
+      "candidatesGot": null,
+      "checks": {
+        "status": false,
+        "includes": false
+      },
+      "pass": false,
+      "falsePopup": false,
+      "missedCollision": true,
+      "failed": [
+        "status",
+        "includes"
+      ]
+    },
+    {
+      "id": "co-hal",
+      "input": "HAL",
+      "category": "ticker-collision",
+      "scored": true,
+      "expected": "MULTIPLE",
+      "got": "SINGLE",
+      "tickerGot": "HAL",
+      "candidatesGot": null,
+      "checks": {
+        "status": false,
+        "includes": false
+      },
+      "pass": false,
+      "falsePopup": false,
+      "missedCollision": true,
+      "failed": [
+        "status",
+        "includes"
+      ]
+    },
+    {
+      "id": "ex-ltmns",
+      "input": "LTM.NS",
+      "category": "explicit-ticker",
+      "scored": true,
+      "expected": "SINGLE",
+      "got": "SINGLE",
+      "tickerGot": "LTM.NS",
+      "candidatesGot": null,
+      "checks": {
+        "status": true,
+        "ticker": true
+      },
+      "pass": true,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": []
+    },
+    {
+      "id": "ex-infyns",
+      "input": "INFY.NS",
+      "category": "explicit-ticker",
+      "scored": true,
+      "expected": "SINGLE",
+      "got": "SINGLE",
+      "tickerGot": "INFY.NS",
+      "candidatesGot": null,
+      "checks": {
+        "status": true,
+        "ticker": true
+      },
+      "pass": true,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": []
+    },
+    {
+      "id": "ex-infy",
+      "input": "INFY",
+      "category": "explicit-ticker",
+      "scored": true,
+      "expected": "SINGLE",
+      "got": "SINGLE",
+      "tickerGot": "INFY",
+      "candidatesGot": null,
+      "checks": {
+        "status": true,
+        "ticker": true
+      },
+      "pass": true,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": []
+    },
+    {
+      "id": "ex-aapl",
+      "input": "AAPL",
+      "category": "explicit-ticker",
+      "scored": true,
+      "expected": "SINGLE",
+      "got": "SINGLE",
+      "tickerGot": "AAPL",
+      "candidatesGot": null,
+      "checks": {
+        "status": true,
+        "ticker": true
+      },
+      "pass": true,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": []
+    },
+    {
+      "id": "pr-cargill",
+      "input": "Cargill",
+      "category": "private",
+      "scored": true,
+      "expected": "NO_MATCH",
+      "got": "NO_MATCH",
+      "tickerGot": null,
+      "candidatesGot": null,
+      "checks": {
+        "status": true
+      },
+      "pass": true,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": []
+    },
+    {
+      "id": "pr-koch",
+      "input": "Koch Industries",
+      "category": "private",
+      "scored": true,
+      "expected": "NO_MATCH",
+      "got": "NO_MATCH",
+      "tickerGot": null,
+      "candidatesGot": null,
+      "checks": {
+        "status": true
+      },
+      "pass": true,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": []
+    },
+    {
+      "id": "pr-rolex",
+      "input": "Rolex",
+      "category": "private",
+      "scored": true,
+      "expected": "NO_MATCH",
+      "got": "SINGLE",
+      "tickerGot": "ROLEXRINGS.NS",
+      "candidatesGot": null,
+      "checks": {
+        "status": false
+      },
+      "pass": false,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": [
+        "status"
+      ]
+    },
+    {
+      "id": "pr-byjus",
+      "input": "Byju's",
+      "category": "private",
+      "scored": true,
+      "expected": "NO_MATCH",
+      "got": "NO_MATCH",
+      "tickerGot": null,
+      "candidatesGot": null,
+      "checks": {
+        "status": true
+      },
+      "pass": true,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": []
+    },
+    {
+      "id": "fk-xyz",
+      "input": "Xyzabc Holdings",
+      "category": "fake",
+      "scored": true,
+      "expected": "NO_MATCH",
+      "got": "NO_MATCH",
+      "tickerGot": null,
+      "candidatesGot": null,
+      "checks": {
+        "status": true
+      },
+      "pass": true,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": []
+    },
+    {
+      "id": "info-spacex",
+      "input": "SpaceX",
+      "category": "info",
+      "scored": false,
+      "expected": "SINGLE",
+      "got": "NO_MATCH",
+      "tickerGot": null,
+      "candidatesGot": null,
+      "checks": {
+        "status": false
+      },
+      "pass": false,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": [
+        "status"
+      ]
+    },
+    {
+      "id": "info-openai",
+      "input": "OpenAI",
+      "category": "info",
+      "scored": false,
+      "expected": "NO_MATCH",
+      "got": "NO_MATCH",
+      "tickerGot": null,
+      "candidatesGot": null,
+      "checks": {
+        "status": true
+      },
+      "pass": true,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": []
+    },
+    {
+      "id": "info-anthropic",
+      "input": "Anthropic",
+      "category": "info",
+      "scored": false,
+      "expected": "NO_MATCH",
+      "got": "SINGLE",
+      "tickerGot": "ANT",
+      "candidatesGot": null,
+      "checks": {
+        "status": false
+      },
+      "pass": false,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": [
+        "status"
+      ]
+    },
+    {
+      "id": "info-stripe",
+      "input": "Stripe",
+      "category": "info",
+      "scored": false,
+      "expected": "NO_MATCH",
+      "got": "NO_MATCH",
+      "tickerGot": null,
+      "candidatesGot": null,
+      "checks": {
+        "status": true
+      },
+      "pass": true,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": []
+    },
+    {
+      "id": "info-databricks",
+      "input": "Databricks",
+      "category": "info",
+      "scored": false,
+      "expected": "NO_MATCH",
+      "got": "NO_MATCH",
+      "tickerGot": null,
+      "candidatesGot": null,
+      "checks": {
+        "status": true
+      },
+      "pass": true,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": []
+    },
+    {
+      "id": "info-facebook",
+      "input": "Facebook",
+      "category": "info",
+      "scored": false,
+      "expected": "SINGLE",
+      "got": "SINGLE",
+      "tickerGot": "FB3.DE",
+      "candidatesGot": null,
+      "checks": {
+        "status": true
+      },
+      "pass": true,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": []
+    },
+    {
+      "id": "info-zomato",
+      "input": "Zomato",
+      "category": "info",
+      "scored": false,
+      "expected": "SINGLE",
+      "got": "NO_MATCH",
+      "tickerGot": null,
+      "candidatesGot": null,
+      "checks": {
+        "status": false
+      },
+      "pass": false,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": [
+        "status"
+      ]
+    },
+    {
+      "id": "info-paytm",
+      "input": "Paytm",
+      "category": "info",
+      "scored": false,
+      "expected": "SINGLE",
+      "got": "SINGLE",
+      "tickerGot": "PAYTM.NS",
+      "candidatesGot": null,
+      "checks": {
+        "status": true
+      },
+      "pass": true,
+      "falsePopup": false,
+      "missedCollision": false,
+      "failed": []
+    }
+  ],
+  "pipelineRows": [
+    {
+      "id": "in-infosys",
+      "input": "Infosys",
+      "category": "india-single",
+      "group": "public",
+      "run": 1,
+      "ms": 7943,
+      "ok": true,
+      "error": null,
+      "decision": "INVEST",
+      "confidence": 70,
+      "metricsFilled": 8,
+      "checks": {
+        "ran": true,
+        "schema": true,
+        "marketType": true,
+        "ticker": true
+      },
+      "pass": true,
+      "failed": []
+    },
+    {
+      "id": "in-hdfcbank",
+      "input": "HDFC Bank",
+      "category": "india-single",
+      "group": "public",
+      "run": 1,
+      "ms": 6221,
+      "ok": true,
+      "error": null,
+      "decision": "PASS",
+      "confidence": 15,
+      "metricsFilled": 1,
+      "checks": {
+        "ran": true,
+        "schema": true,
+        "marketType": true,
+        "ticker": true
+      },
+      "pass": true,
+      "failed": []
+    },
+    {
+      "id": "in-reliance",
+      "input": "Reliance Industries",
+      "category": "india-single",
+      "group": "public",
+      "run": 1,
+      "ms": 5578,
+      "ok": true,
+      "error": null,
+      "decision": "INVEST",
+      "confidence": 75,
+      "metricsFilled": 8,
+      "checks": {
+        "ran": true,
+        "schema": true,
+        "marketType": true,
+        "ticker": true
+      },
+      "pass": true,
+      "failed": []
+    },
+    {
+      "id": "gl-apple",
+      "input": "Apple",
+      "category": "global-single",
+      "group": "public",
+      "run": 1,
+      "ms": 6296,
+      "ok": true,
+      "error": null,
+      "decision": "PASS",
+      "confidence": 78,
+      "metricsFilled": 8,
+      "checks": {
+        "ran": true,
+        "schema": true,
+        "marketType": true,
+        "ticker": true
+      },
+      "pass": true,
+      "failed": []
+    },
+    {
+      "id": "gl-msft",
+      "input": "Microsoft",
+      "category": "global-single",
+      "group": "public",
+      "run": 1,
+      "ms": 7067,
+      "ok": true,
+      "error": null,
+      "decision": "INVEST",
+      "confidence": 85,
+      "metricsFilled": 8,
+      "checks": {
+        "ran": true,
+        "schema": true,
+        "marketType": true,
+        "ticker": true
+      },
+      "pass": true,
+      "failed": []
+    },
+    {
+      "id": "gl-nvda",
+      "input": "NVIDIA",
+      "category": "global-single",
+      "group": "public",
+      "run": 1,
+      "ms": 6610,
+      "ok": true,
+      "error": null,
+      "decision": "INVEST",
+      "confidence": 85,
+      "metricsFilled": 8,
+      "checks": {
+        "ran": true,
+        "schema": true,
+        "marketType": true,
+        "ticker": true
+      },
+      "pass": true,
+      "failed": []
+    },
+    {
+      "id": "br-google",
+      "input": "Google",
+      "category": "brand-name",
+      "group": "public",
+      "run": 1,
+      "ms": 12031,
+      "ok": true,
+      "error": null,
+      "decision": "PASS",
+      "confidence": 30,
+      "metricsFilled": 4,
+      "checks": {
+        "ran": true,
+        "schema": true,
+        "marketType": true,
+        "ticker": true
+      },
+      "pass": true,
+      "failed": []
+    },
+    {
+      "id": "ex-ltmns",
+      "input": "LTM.NS",
+      "category": "explicit-ticker",
+      "group": "public",
+      "run": 1,
+      "ms": 7700,
+      "ok": true,
+      "error": null,
+      "decision": "PASS",
+      "confidence": 22,
+      "metricsFilled": 2,
+      "checks": {
+        "ran": true,
+        "schema": true,
+        "marketType": true,
+        "ticker": true
+      },
+      "pass": true,
+      "failed": []
+    },
+    {
+      "id": "pr-cargill",
+      "input": "Cargill",
+      "category": "private",
+      "group": "private",
+      "run": 1,
+      "ms": 5757,
+      "ok": true,
+      "error": null,
+      "decision": "PASS",
+      "confidence": 12,
+      "metricsFilled": 0,
+      "checks": {
+        "ran": true,
+        "schema": true,
+        "marketPrivate": true,
+        "tickerPrivate": true,
+        "decisionPass": true,
+        "confidence5to20": true,
+        "metricsNull": true
+      },
+      "pass": true,
+      "failed": []
+    },
+    {
+      "id": "pr-koch",
+      "input": "Koch Industries",
+      "category": "private",
+      "group": "private",
+      "run": 1,
+      "ms": 1659,
+      "ok": true,
+      "error": null,
+      "decision": "PASS",
+      "confidence": 10,
+      "metricsFilled": 0,
+      "checks": {
+        "ran": true,
+        "schema": true,
+        "marketPrivate": true,
+        "tickerPrivate": true,
+        "decisionPass": true,
+        "confidence5to20": true,
+        "metricsNull": true
+      },
+      "pass": true,
+      "failed": []
+    },
+    {
+      "id": "fk-xyz",
+      "input": "Xyzabc Holdings",
+      "category": "fake",
+      "group": "fake",
+      "run": 1,
+      "ms": 7556,
+      "ok": true,
+      "error": null,
+      "decision": "PASS",
+      "confidence": 15,
+      "metricsFilled": 0,
+      "checks": {
+        "ran": true,
+        "schema": true,
+        "decisionPass": true
+      },
+      "pass": true,
+      "failed": []
+    }
+  ]
+}

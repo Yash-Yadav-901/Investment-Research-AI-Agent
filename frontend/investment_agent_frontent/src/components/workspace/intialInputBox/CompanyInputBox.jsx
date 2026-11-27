@@ -81,6 +81,9 @@ const CompanyInputBox = ({ data }) => {
         if (sel.type === "candidate") {
             setModal(null);
             await executeCreateCompany(sel.candidate.name, sel.candidate.ticker);
+        } else if (sel.type === "unlisted") {
+            setModal(null);
+            await executeCreateCompany(sel.text, null);
         } else if (sel.type === "typed") {
             setModalBusy(true);
             try {

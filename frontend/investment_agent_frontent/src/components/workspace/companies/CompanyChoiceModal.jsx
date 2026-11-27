@@ -9,16 +9,26 @@ import { createPortal } from "react-dom";
  *   candidates {object[]}  – resolve MULTIPLE candidates
  *   notice     {string}    – optional banner text (shown when re-resolving loops back to MULTIPLE)
  *   busy       {boolean}   – disable interactions while re-resolving
- *   onProceed  {function}  – called with { type: "candidate", candidate } or { type: "typed", text }
+ *   onProceed  {function}  – called with { type: "candidate", candidate }, { type: "unlisted", text }, or { type: "typed", text }
  *   onCancel   {function}  – close without starting any analysis
  */
 const CompanyChoiceModal = ({ query, candidates, notice, busy, onProceed, onCancel }) => {
+    const [selectedOption, setSelectedOption] = useState(null); // { type: "candidate", candidate } | { type: "unlisted" } | null
     const [typedText, setTypedText] = useState("");
 
     const handleTypedSubmit = () => {
         const text = typedText.trim();
         if (!text) return;
         onProceed({ type: "typed", text });
+    };
+
+    const handleProceed = () => {
+        if (!selectedOption) return;
+        if (selectedOption.type === "unlisted") {
+            onProceed({ type: "unlisted", text: query });
+        } else if (selectedOption.type === "candidate") {
+            onProceed({ type: "candidate", candidate: selectedOption.candidate });
+        }
     };
 
     const content = (
@@ -42,35 +52,70 @@ const CompanyChoiceModal = ({ query, candidates, notice, busy, onProceed, onCanc
                     </div>
                 )}
 
-                {/* Candidate list */}
+                {/* Candidate list & None of these option */}
                 <div className="flex flex-col gap-2 max-h-64 overflow-y-auto pr-1">
-                    {candidates.map((cand) => (
-                        <button
-                            key={cand.ticker}
-                            type="button"
-                            disabled={busy}
-                            onClick={() => onProceed({ type: "candidate", candidate: cand })}
-                            className="flex items-center justify-between p-3 border-2 border-[#0F172A] rounded-xl hover:bg-[#FEF08A] hover:-translate-y-[2px] active:translate-y-0 transition-all text-left shadow-[2px_2px_0px_0px_#0F172A] bg-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <div className="flex flex-col pr-2">
-                                <span className="text-xs font-black text-[#0F172A]">{cand.name}</span>
-                                <span className="text-[10px] font-bold text-slate-500">
-                                    {cand.ticker} · {cand.exchange}
+                    {candidates.map((cand) => {
+                        const isSelected = selectedOption?.type === "candidate" && selectedOption.candidate.ticker === cand.ticker;
+                        return (
+                            <label
+                                key={cand.ticker}
+                                onClick={() => setSelectedOption({ type: "candidate", candidate: cand })}
+                                className={`flex items-center justify-between p-3 border-2 border-[#0F172A] rounded-xl transition-all text-left shadow-[2px_2px_0px_0px_#0F172A] cursor-pointer ${
+                                    isSelected ? "bg-[#FEF08A] -translate-y-[1px]" : "bg-white hover:bg-slate-50"
+                                } ${busy ? "opacity-50 cursor-not-allowed" : ""}`}
+                            >
+                                <div className="flex items-center gap-3 pr-2">
+                                    <input
+                                        type="radio"
+                                        name="company_choice"
+                                        disabled={busy}
+                                        checked={isSelected}
+                                        onChange={() => setSelectedOption({ type: "candidate", candidate: cand })}
+                                        className="w-4 h-4 text-[#0F172A] border-2 border-[#0F172A] focus:ring-0 cursor-pointer accent-[#0F172A]"
+                                    />
+                                    <div className="flex flex-col">
+                                        <span className="text-xs font-black text-[#0F172A]">{cand.name}</span>
+                                        <span className="text-[10px] font-bold text-slate-500">
+                                            {cand.ticker} · {cand.exchange}
+                                        </span>
+                                        {cand.otherListings && cand.otherListings.length > 0 && (
+                                            <span className="text-[10px] font-semibold text-slate-400 mt-0.5">
+                                                Also listed:{" "}
+                                                {cand.otherListings
+                                                    .map((o) => `${o.ticker} (${o.exchange})`)
+                                                    .join(", ")}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                                <span className="text-xs font-mono font-bold bg-[#E0E7FF] text-[#1E1B4B] px-2 py-0.5 border border-[#0F172A] rounded-md shrink-0">
+                                    {cand.ticker}
                                 </span>
-                                {cand.otherListings && cand.otherListings.length > 0 && (
-                                    <span className="text-[10px] font-semibold text-slate-400 mt-0.5">
-                                        Also listed:{" "}
-                                        {cand.otherListings
-                                            .map((o) => `${o.ticker} (${o.exchange})`)
-                                            .join(", ")}
-                                    </span>
-                                )}
-                            </div>
-                            <span className="text-xs font-mono font-bold bg-[#E0E7FF] text-[#1E1B4B] px-2 py-0.5 border border-[#0F172A] rounded-md shrink-0">
-                                {cand.ticker}
+                            </label>
+                        );
+                    })}
+
+                    {/* None of these option */}
+                    <label
+                        onClick={() => setSelectedOption({ type: "unlisted" })}
+                        className={`flex items-center gap-3 p-3 border-2 border-[#0F172A] rounded-xl transition-all text-left shadow-[2px_2px_0px_0px_#0F172A] cursor-pointer ${
+                            selectedOption?.type === "unlisted" ? "bg-[#FEF08A] -translate-y-[1px]" : "bg-white hover:bg-slate-50"
+                        } ${busy ? "opacity-50 cursor-not-allowed" : ""}`}
+                    >
+                        <input
+                            type="radio"
+                            name="company_choice"
+                            disabled={busy}
+                            checked={selectedOption?.type === "unlisted"}
+                            onChange={() => setSelectedOption({ type: "unlisted" })}
+                            className="w-4 h-4 text-[#0F172A] border-2 border-[#0F172A] focus:ring-0 cursor-pointer accent-[#0F172A]"
+                        />
+                        <div className="flex flex-col">
+                            <span className="text-xs font-bold text-[#0F172A]">
+                                None of these - the company isn&apos;t listed or I mean a different one
                             </span>
-                        </button>
-                    ))}
+                        </div>
+                    </label>
                 </div>
 
                 {/* Type a fuller name */}
@@ -107,7 +152,7 @@ const CompanyChoiceModal = ({ query, candidates, notice, busy, onProceed, onCanc
                 </div>
 
                 {/* Footer */}
-                <div className="flex justify-end pt-2 border-t-2 border-slate-100">
+                <div className="flex justify-end gap-2 pt-2 border-t-2 border-slate-100">
                     <button
                         type="button"
                         disabled={busy}
@@ -115,6 +160,14 @@ const CompanyChoiceModal = ({ query, candidates, notice, busy, onProceed, onCanc
                         className="px-4 py-2 border-2 border-[#0F172A] rounded-xl font-black text-xs uppercase hover:bg-slate-100 shadow-[2px_2px_0px_0px_#0F172A] transition-all cursor-pointer disabled:opacity-50"
                     >
                         Cancel
+                    </button>
+                    <button
+                        type="button"
+                        disabled={busy || !selectedOption}
+                        onClick={handleProceed}
+                        className="px-4 py-2 bg-[#FBBF24] hover:bg-[#F59E0B] text-[#0F172A] border-2 border-[#0F172A] rounded-xl font-black text-xs uppercase shadow-[2px_2px_0px_0px_#0F172A] hover:-translate-y-[1px] active:translate-y-0 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        Proceed
                     </button>
                 </div>
             </div>
